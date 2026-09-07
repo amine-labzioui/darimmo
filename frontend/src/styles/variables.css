@@ -1,0 +1,19 @@
+/* Variables CSS partagées — DarImmo */
+:root {
+  --color-primary: #047857;
+  --color-primary-dark: #035f46;
+  --color-terracotta: #c2622d;
+  --color-terracotta-dark: #a8521f;
+  --color-sand-bg: #f5f0e8;
+  --color-sand-card: #fffbf5;
+  --color-charcoal: #1c2520;
+  --color-deep: #0e2a22;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  --shadow-card: 0 16px 40px -16px rgba(28, 37, 32, 0.22);
+  --shadow-hero: 0 20px 50px -12px rgba(28, 37, 32, 0.18);
+}

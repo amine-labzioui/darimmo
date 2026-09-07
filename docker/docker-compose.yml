@@ -1,0 +1,91 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: darimmo_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: darimmo_db
+
+  redis:
+    image: redis:7-alpine
+    container_name: darimmo_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: darimmo_backend
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - backend/.env
+    environment:
+      MONGO_HOST: mongodb
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/media:/app/backend/media
+      - ./backend/logs:/app/backend/logs
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: darimmo_celery_worker
+    restart: unless-stopped
+    command: celery -A darimmo_project worker --loglevel=info
+    depends_on:
+      - backend
+      - redis
+      - mongodb
+    env_file:
+      - backend/.env
+    environment:
+      MONGO_HOST: mongodb
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: darimmo_celery_beat
+    restart: unless-stopped
+    command: celery -A darimmo_project beat --loglevel=info
+    depends_on:
+      - backend
+      - redis
+      - mongodb
+    env_file:
+      - backend/.env
+    environment:
+      MONGO_HOST: mongodb
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: darimmo_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  mongo_data:

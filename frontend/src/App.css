@@ -1,0 +1,5 @@
+/* App.css — DarImmo
+ * La majorité du style passe par Tailwind CSS (classes utilitaires) et les
+ * fichiers partagés dans src/styles/. Ce fichier reste pour d'éventuels
+ * ajustements spécifiques au composant racine <App />.
+ */

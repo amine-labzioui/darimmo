@@ -1,0 +1,45 @@
+version: "3.9"
+# Compose simplifié pour lancer rapidement le backend en développement local
+# (MongoDB + Redis + Django). Pour la stack complète avec le frontend,
+# utilisez plutôt /docker/docker-compose.yml à la racine du projet.
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: darimmo_mongodb_dev
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data_dev:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: darimmo_redis_dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: darimmo_backend_dev
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - .env
+    environment:
+      MONGO_HOST: mongodb
+      CELERY_BROKER_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./media:/app/backend/media
+      - ./logs:/app/backend/logs
+    command: python manage.py runserver 0.0.0.0:8000
+
+volumes:
+  mongo_data_dev:
