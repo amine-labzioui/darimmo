@@ -32,6 +32,9 @@ Variables d'environnement optionnelles :
     DELAY_SECONDS    pause entre deux requêtes (défaut 5) — protège le quota gratuit
     TIMEOUT_SECONDS  timeout par requête (défaut 60)
     MAX_RETRIES      nouvelles tentatives en cas d'échec (défaut 2)
+    RESULTS_SUBDIR   dossier des résultats (défaut : resultats_classification_v2)
+
+Version 2 : 11 intentions (ajout de market_advice), 77 messages.
 """
 
 import argparse
@@ -56,7 +59,9 @@ except Exception:
 
 BASE_DIR = Path(__file__).resolve().parent
 DATASET_PATH = BASE_DIR / "dataset_classification.csv"
-RESULTS_DIR = BASE_DIR / "results"
+# Version 2 (11 intentions, avec market_advice) : nouveau dossier de résultats,
+# pour ne pas écraser ni réutiliser les résultats de la version 1 (10 intentions).
+RESULTS_DIR = BASE_DIR / os.getenv("RESULTS_SUBDIR", "resultats_classification_v2")
 RAW_PATH = RESULTS_DIR / "classification_raw.jsonl"
 
 WEBHOOK_URL = os.getenv("CLASSIFY_URL", "http://localhost:5678/webhook/darimmo-test-classify")
@@ -67,7 +72,7 @@ MAX_RETRIES = int(os.getenv("MAX_RETRIES", "2"))
 INTENTS = [
     "search_property", "create_listing", "update_listing", "delete_listing",
     "my_listings", "payment_status", "contact_owner", "account_help",
-    "general_help", "unknown",
+    "general_help", "market_advice", "unknown",
 ]
 LANG_LABELS = {"fr": "Français", "dar": "Darija", "ar": "Arabe", "en": "Anglais"}
 
