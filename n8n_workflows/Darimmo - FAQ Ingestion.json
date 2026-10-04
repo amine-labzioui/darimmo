@@ -1,0 +1,169 @@
+{
+  "name": "Darimmo - FAQ Ingestion",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "19154681-27ab-426a-9c5b-9530970be9e2",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        288,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const faqData = [\n  { id: \"faq-1\", title: \"Comment créer un compte sur Darimmo ?\", content: \"Pour créer un compte sur Darimmo, cliquez sur \\\"S'inscrire\\\" en haut de la page, renseignez votre nom, email et mot de passe, puis validez. Vous pouvez vous inscrire en tant que particulier ou en tant qu'agence immobilière.\" },\n  { id: \"faq-2\", title: \"Comment publier une annonce ?\", content: \"Une fois connecté, allez dans votre espace \\\"Mes annonces\\\" puis cliquez sur \\\"Nouvelle annonce\\\". Renseignez le titre, la description, le type de bien, la ville, le prix, la surface et le nombre de chambres, puis ajoutez des photos. Votre annonce passe en statut \\\"En attente de validation\\\" avant d'être publiée.\" },\n  { id: \"faq-3\", title: \"Pourquoi mon annonce est en attente de validation ?\", content: \"Chaque nouvelle annonce est vérifiée avant publication pour s'assurer qu'elle respecte les règles de la plateforme. Ce délai est généralement court. Une fois validée, le statut passe à \\\"Publiée\\\" et elle devient visible dans les résultats de recherche.\" },\n  { id: \"faq-4\", title: \"Comment rechercher un bien immobilier sur Darimmo ?\", content: \"Utilisez la barre de recherche ou les filtres (ville, type de bien, budget, nombre de chambres, piscine, parking) pour affiner votre recherche. Vous pouvez aussi demander directement à l'assistant IA de Darimmo, par exemple : \\\"je cherche un appartement à Casablanca avec un budget de 2 millions\\\".\" },\n  { id: \"faq-5\", title: \"Qu'est-ce que le boost d'une annonce ?\", content: \"Le boost est une mise en avant payante de votre annonce : elle apparaît en priorité dans les résultats de recherche pendant une durée choisie (par exemple 7 ou 15 jours). Cela augmente sa visibilité et le nombre de vues.\" },\n  { id: \"faq-6\", title: \"Comment booster mon annonce ?\", content: \"Depuis la page \\\"Mes annonces\\\", cliquez sur le bouton \\\"Booster cette annonce\\\" sous l'annonce concernée, choisissez une formule, puis procédez au paiement via Stripe ou CMI.\" },\n  { id: \"faq-7\", title: \"Quels moyens de paiement sont acceptés sur Darimmo ?\", content: \"Darimmo accepte les paiements par Stripe (cartes internationales) et par CMI (cartes marocaines), pour les services payants comme le boost d'annonces.\" },\n  { id: \"faq-8\", title: \"Comment vérifier le statut de mon paiement ?\", content: \"Vous pouvez consulter vos transactions dans votre espace personnel, ou demander directement à l'assistant IA : \\\"quel est le statut de mon paiement ?\\\" ou \\\"montre-moi mes transactions\\\". Chaque transaction a un statut : en attente, réussie, échouée ou remboursée.\" },\n  { id: \"faq-9\", title: \"Que faire si mon paiement est resté en attente ?\", content: \"Un paiement en attente signifie que la transaction n'a pas encore été confirmée par le fournisseur de paiement. Si le statut ne change pas après quelques minutes, contactez le support Darimmo pour vérification.\" },\n  { id: \"faq-10\", title: \"Comment contacter le propriétaire d'une annonce ?\", content: \"Sur la page de l'annonce qui vous intéresse, cliquez sur \\\"Contacter le propriétaire\\\" et rédigez votre message. Vous pouvez aussi demander à l'assistant IA de le faire pour vous, en précisant l'annonce concernée.\" },\n  { id: \"faq-11\", title: \"Où retrouver mes conversations avec les propriétaires ?\", content: \"Toutes vos conversations sont accessibles dans l'onglet \\\"Messages\\\" de votre espace personnel. Vous y voyez l'historique complet de chaque échange, classé par annonce.\" },\n  { id: \"faq-12\", title: \"Comment modifier ou supprimer une annonce ?\", content: \"Depuis \\\"Mes annonces\\\", ouvrez les options de l'annonce concernée pour la modifier ou la supprimer. Vous pouvez aussi demander à l'assistant IA, par exemple : \\\"je veux modifier le prix de mon annonce numéro 5\\\". Pour une suppression, l'assistant vous demandera toujours une confirmation avant d'agir, car cette action est irréversible.\" },\n  { id: \"faq-13\", title: \"Pourquoi je ne peux pas publier ou gérer d'annonce ?\", content: \"Pour créer, modifier, supprimer une annonce ou consulter vos paiements, vous devez être connecté à votre compte Darimmo. Si vous n'êtes pas connecté, connectez-vous puis réessayez.\" },\n  { id: \"faq-14\", title: \"Quels types de biens peut-on trouver sur Darimmo ?\", content: \"Darimmo référence des villas, appartements, riads, maisons et terrains, à vendre ou à louer, dans différentes villes du Maroc.\" },\n  { id: \"faq-15\", title: \"Comment fonctionne l'assistant IA de Darimmo ?\", content: \"L'assistant IA de Darimmo comprend vos demandes en langage naturel et vous aide à rechercher un bien, gérer vos annonces, consulter vos paiements, ou contacter un propriétaire. Il s'appuie toujours sur les données réelles de la plateforme et ne vous donne jamais d'information inventée.\" },\n  { id: \"faq-16\", title: \"Darimmo s'adresse-t-il aussi aux agences immobilières ?\", content: \"Oui, les agences immobilières peuvent créer un compte professionnel pour publier et gérer plusieurs annonces, avec un tableau de bord dédié.\" },\n  { id: \"faq-17\", title: \"Comment savoir combien de personnes ont vu mon annonce ?\", content: \"Le nombre de vues de chaque annonce est visible directement sur la page de l'annonce et dans votre espace \\\"Mes annonces\\\".\" },\n  { id: \"faq-18\", title: \"Puis-je utiliser Darimmo sans créer de compte ?\", content: \"Oui, la recherche et la consultation des annonces publiées sont accessibles sans compte. En revanche, publier une annonce, contacter un propriétaire ou consulter vos paiements nécessitent d'être connecté.\" },\n  { id: \"faq-19\", title: \"Que faire si je ne trouve pas de bien correspondant à mes critères ?\", content: \"Essayez d'élargir votre recherche : une ville voisine, un budget légèrement plus large, ou en retirant un critère comme la piscine ou le parking. L'assistant IA peut vous suggérer ces ajustements automatiquement.\" },\n  { id: \"faq-20\", title: \"Comment contacter le support Darimmo ?\", content: \"Pour toute question non résolue par l'assistant IA ou cette FAQ, vous pouvez contacter l'équipe support de Darimmo via la page de contact du site.\" }\n];\n\nreturn faqData.map(faq => ({\n  json: {\n    text: `${faq.title}\\n${faq.content}`,\n    article_id: faq.id,\n    title: faq.title,\n    content: faq.content\n  }\n}));"
+      },
+      "id": "75d4db60-2b2b-4cb8-9c35-ea0bdfece0ce",
+      "name": "Load FAQ Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "mongoCollection": {
+          "__rl": true,
+          "mode": "list",
+          "value": "help_articles"
+        },
+        "vectorIndexName": "help_articles_vector_index",
+        "options": {}
+      },
+      "id": "bac103a6-c4a8-4eae-9dd8-b411a5b3cfd0",
+      "name": "MongoDB Atlas Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreMongoDBAtlas",
+      "typeVersion": 1,
+      "position": [
+        768,
+        0
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "BhYoHXPiiFIwOvWb",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "f9eba27e-fdca-43c0-8b53-8597ff5562c7",
+      "name": "Embeddings Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        752,
+        240
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "quFFo9xLCq1GGyLH",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "1a64c24c-2934-42a2-a0e3-f722b2fc2f5d",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        880,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 5000
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        960,
+        448
+      ],
+      "id": "cb0da9ac-67fb-4cda-930e-dc850c6a76c4",
+      "name": "Character Text Splitter"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Load FAQ Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load FAQ Data": {
+      "main": [
+        [
+          {
+            "node": "MongoDB Atlas Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "MongoDB Atlas Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "MongoDB Atlas Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f245cd1b-9b54-4a07-a360-763d9a5423a3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "310f76547641023b1ea227a9c38448488011e305263742c6c74f434e8ce90bb1"
+  },
+  "nodeGroups": [],
+  "id": "MJv5iXLpw9QzB3HM",
+  "tags": []
+}

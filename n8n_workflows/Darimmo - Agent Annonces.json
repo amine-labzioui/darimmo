@@ -1,0 +1,540 @@
+{
+  "name": "Darimmo - Agent Annonces",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "darimmo-agent-annonces",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f80fd492-9c57-434c-87bd-96aad3705fc8",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        0
+      ],
+      "webhookId": "2f1639e6-96dc-44d7-ad0d-b74cdb82c7b6"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body || $json;\n\nconst isAuthenticated = !!(body.user_context && body.user_context.is_authenticated);\nconst authToken = body.auth_token || '';\nconst userMessage = body.message;\nconst sessionId = body.session_id || 'unknown';\n\nconst systemPrompt = `Tu es l'agent de gestion des annonces de Darimmo, une plateforme marocaine d'annonces immobilieres.\n\nTon role : aider un utilisateur AUTHENTIFIE a creer, modifier, supprimer ou consulter ses propres annonces.\n\nRegles strictes :\n- N'invente aucune information sur une annonce. Toute information doit venir du resultat d'un outil.\n- Pour update_listing et delete_listing : n'agis JAMAIS sans un identifiant d'annonce explicite (annonce_id). Si l'utilisateur dit \"mon annonce\" sans preciser laquelle, utilise my_listings d'abord et demande de preciser.\n- Pour delete_listing : ne mets confirmed=true QUE si l'utilisateur a explicitement confirme la suppression dans son message (ex: \"oui, supprime-la\", \"confirme\"). Sinon mets confirmed=false et pose la question de confirmation dans ta reponse texte, SANS appeler l'outil delete_listing.\n- Pour create_listing : si des champs obligatoires manquent (titre, ville, type de bien, prix, surface), demande-les avant d'appeler l'outil.\n- Reponds TOUJOURS dans la meme langue que le message de l'utilisateur. Si l'utilisateur ecrit en darija (arabe marocain, en caracteres latins ou arabes), en arabe standard, en francais ou en anglais, reponds dans cette meme langue.`;\n\nconst tools = [\n  {\n    name: \"create_listing\",\n    description: \"Cree une nouvelle annonce immobiliere pour l'utilisateur connecte.\",\n    parameters: {\n      type: \"OBJECT\",\n      properties: {\n        title: { type: \"STRING\" },\n        description: { type: \"STRING\" },\n        property_type: { type: \"STRING\", enum: [\"villa\",\"appartement\",\"riad\",\"maison\",\"terrain\"] },\n        transaction_type: { type: \"STRING\", enum: [\"vente\",\"location\"] },\n        city: { type: \"STRING\" },\n        price: { type: \"NUMBER\" },\n        surface: { type: \"NUMBER\" },\n        bedrooms: { type: \"NUMBER\" },\n        bathrooms: { type: \"NUMBER\" }\n      },\n      required: [\"title\",\"description\",\"property_type\",\"transaction_type\",\"city\",\"price\",\"surface\"]\n    }\n  },\n  {\n    name: \"update_listing\",\n    description: \"Modifie une annonce existante appartenant a l'utilisateur connecte. Fournir uniquement les champs a modifier.\",\n    parameters: {\n      type: \"OBJECT\",\n      properties: {\n        annonce_id: { type: \"NUMBER\" },\n        title: { type: \"STRING\" },\n        description: { type: \"STRING\" },\n        price: { type: \"NUMBER\" },\n        surface: { type: \"NUMBER\" },\n        bedrooms: { type: \"NUMBER\" },\n        bathrooms: { type: \"NUMBER\" }\n      },\n      required: [\"annonce_id\"]\n    }\n  },\n  {\n    name: \"delete_listing\",\n    description: \"Supprime une annonce appartenant a l'utilisateur connecte. Necessite une confirmation explicite de l'utilisateur dans le message.\",\n    parameters: {\n      type: \"OBJECT\",\n      properties: {\n        annonce_id: { type: \"NUMBER\" },\n        confirmed: { type: \"BOOLEAN\" }\n      },\n      required: [\"annonce_id\",\"confirmed\"]\n    }\n  },\n  {\n    name: \"my_listings\",\n    description: \"Liste toutes les annonces de l'utilisateur connecte.\",\n    parameters: { type: \"OBJECT\", properties: {} }\n  }\n];\n\nreturn {\n  json: {\n    is_authenticated: isAuthenticated,\n    auth_token: authToken,\n    original_user_message: userMessage,\n    session_id: sessionId,\n    gemini_request_body: {\n      contents: [{ role: \"user\", parts: [{ text: `${systemPrompt}\\n\\nMessage de l'utilisateur : \"${userMessage}\"` }] }],\n      tools: [{ functionDeclarations: tools }]\n    }\n  }\n};"
+      },
+      "id": "cb598124-cc7d-4af7-80f0-5ab0704be4d6",
+      "name": "Build Prompt And Tools",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -592,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "auth-check",
+              "leftValue": "={{ $json.is_authenticated }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cc7b46b3-2509-40ad-96e3-b55bb1c7aa43",
+      "name": "Utilisateur authentifie ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    reply: \"Vous devez etre connecte pour gerer vos annonces (creer, modifier, supprimer ou consulter). Merci de vous connecter puis de reessayer.\",\n    session_id: $json.session_id,\n    recommended_annonce_ids: [],\n    intent: \"account_help\",\n    metadata: { agent_used: \"listing_management_agent\", tool_calls_count: 0, llm_calls_count: 0 }\n  }\n};"
+      },
+      "id": "b26b9ffe-baea-4272-a9fc-53b3339d395a",
+      "name": "Refus non authentifie",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "652299a3-7683-4cc2-bc52-8380fcbf6b9b",
+      "name": "Respond to Webhook (refus)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "<GEMINI_API_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.gemini_request_body }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "31f90eab-a835-4188-a7f3-4207a98c1145",
+      "name": "Gemini Function Calling",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -144,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const prevData = $('Build Prompt And Tools').item.json;\nconst candidate = $json.candidates[0];\nconst parts = candidate.content.parts;\nconst functionCallPart = parts.find(p => p.functionCall);\n\nif (!functionCallPart) {\n  const textPart = parts.find(p => p.text);\n  return {\n    json: {\n      needs_tool_call: false,\n      direct_reply: textPart ? textPart.text : \"Je n'ai pas compris votre demande.\",\n      session_id: prevData.session_id\n    }\n  };\n}\n\nconst toolName = functionCallPart.functionCall.name;\nconst args = functionCallPart.functionCall.args;\nconst authToken = prevData.auth_token;\n\nlet django_method = 'GET';\nlet django_url = '';\nlet django_body = {};\n\nif (toolName === 'create_listing') {\n  django_method = 'POST';\n  django_url = 'http://127.0.0.1:8000/api/annonces/';\n  django_body = {\n    title: args.title,\n    description: args.description,\n    property_type: args.property_type,\n    transaction_type: args.transaction_type,\n    city: args.city,\n    price: args.price,\n    surface: args.surface,\n    bedrooms: args.bedrooms || 0,\n    bathrooms: args.bathrooms || 0\n  };\n} else if (toolName === 'update_listing') {\n  django_method = 'PATCH';\n  django_url = 'http://127.0.0.1:8000/api/annonces/' + args.annonce_id + '/';\n  django_body = {};\n  ['title','description','price','surface','bedrooms','bathrooms'].forEach(f => {\n    if (args[f] !== undefined) django_body[f] = args[f];\n  });\n} else if (toolName === 'delete_listing') {\n  if (!args.confirmed) {\n    return {\n      json: {\n        needs_tool_call: false,\n        direct_reply: `Confirmez-vous la suppression de l'annonce ${args.annonce_id} ? Cette action est irreversible. Repondez \"oui, confirme\" pour valider.`,\n        session_id: prevData.session_id\n      }\n    };\n  }\n  django_method = 'DELETE';\n  django_url = 'http://127.0.0.1:8000/api/annonces/' + args.annonce_id + '/';\n  django_body = {};\n} else if (toolName === 'my_listings') {\n  django_method = 'GET';\n  django_url = 'http://127.0.0.1:8000/api/annonces/mes_annonces/';\n  django_body = {};\n}\n\nreturn {\n  json: {\n    needs_tool_call: true,\n    tool_name: toolName,\n    tool_args: args,\n    django_method,\n    django_url,\n    django_body,\n    auth_token: authToken,\n    original_user_message: prevData.original_user_message,\n    session_id: prevData.session_id\n  }\n};"
+      },
+      "id": "0dcbb7d0-4ce3-4fc4-930b-08080c6be7ec",
+      "name": "Extraire functionCall et preparer requete Django",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "needs-tool",
+              "leftValue": "={{ $json.needs_tool_call }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d277501d-f1b9-4cf4-9c0b-13c01c04ce55",
+      "name": "Appel outil necessaire ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        304,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    reply: $json.direct_reply,\n    session_id: $json.session_id,\n    recommended_annonce_ids: [],\n    intent: \"account_help\",\n    metadata: { agent_used: \"listing_management_agent\", tool_calls_count: 0, llm_calls_count: 1 }\n  }\n};"
+      },
+      "id": "6308ba78-6bbd-4f17-b07b-87ed8f7192c0",
+      "name": "Reponse directe sans outil",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "acb4efc1-d343-4e36-93df-cc0539dbf9e9",
+      "name": "Respond to Webhook (direct)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        752,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const prevData = $('Extraire functionCall et preparer requete Django').item.json;\nconst djangoResult = $json;\n\n// Si le résultat est une liste paginée (results) ou une liste directe,\n// on extrait les IDs des annonces pour les renvoyer au frontend.\nlet annonceIds = [];\nconst resultsArray = djangoResult.results || (Array.isArray(djangoResult) ? djangoResult : null);\nif (resultsArray && Array.isArray(resultsArray)) {\n  annonceIds = resultsArray.map(a => a.id).filter(id => id !== undefined);\n}\n\nreturn {\n  json: {\n    tool_name: prevData.tool_name,\n    tool_result: djangoResult,\n    annonce_ids: annonceIds,\n    original_user_message: prevData.original_user_message,\n    session_id: prevData.session_id\n  }\n};"
+      },
+      "id": "28aced4b-3722-4de7-8f42-27337d031501",
+      "name": "Reformater le resultat Django",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const d = $json;\n\nconst prompt = `Tu es l'agent de gestion des annonces de Darimmo.\n\nOutil appele : ${d.tool_name}\nResultat retourne par l'API : ${JSON.stringify(d.tool_result)}\n\nMessage original de l'utilisateur : \"${d.original_user_message}\"\n\nRegles strictes :\n- Base ta reponse UNIQUEMENT sur le resultat fourni ci-dessus. N'invente rien.\n- Si le resultat contient une erreur (ex: 403, 404, permission refusee), explique clairement a l'utilisateur qu'il n'a pas acces a cette annonce ou qu'elle n'existe pas, sans detailler la cause technique.\n- Si l'action a reussi, confirme-le clairement (annonce creee/modifiee/supprimee, ou liste des annonces trouvees).\n- Reponds TOUJOURS dans la meme langue que le message de l'utilisateur. Si l'utilisateur ecrit en darija (arabe marocain, en caracteres latins ou arabes), en arabe standard, en francais ou en anglais, reponds dans cette meme langue.`;\n\nreturn {\n  json: {\n    gemini_request_body: { contents: [{ role: \"user\", parts: [{ text: prompt }] }] },\n    session_id: d.session_id,\n    tool_result: d.tool_result\n  }\n};"
+      },
+      "id": "f78d39b0-5d42-4148-b934-c81d4d7f9e81",
+      "name": "Construire prompt final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "<GEMINI_API_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.gemini_request_body }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "1b2215c3-85a5-4c40-860f-3601caef61d9",
+      "name": "Gemini reponse finale",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const replyText = $json.candidates[0].content.parts[0].text;\nconst prevData = $('Construire prompt final').item.json;\n\nreturn {\n  json: {\n    reply: replyText,\n    session_id: prevData.session_id,\n    recommended_annonce_ids: $('Reformater le resultat Django').item.json.annonce_ids,\n    intent: \"listing_management\",\n    metadata: { agent_used: \"listing_management_agent\", tool_calls_count: 1, llm_calls_count: 2 }\n  }\n};"
+      },
+      "id": "acc840dd-dfb1-4d5c-8e40-30b6d62ab28f",
+      "name": "Construire reponse finale",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "4c886d06-8c4f-4782-8215-ecc978acfeea",
+      "name": "Respond to Webhook (final)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        1648,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "message"
+            },
+            {
+              "name": "session_id"
+            },
+            {
+              "name": "user_context",
+              "type": "object"
+            },
+            {
+              "name": "auth_token"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -816,
+        192
+      ],
+      "id": "403d14f8-76a6-476b-80ee-c15b8f6f5e31",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "method": "={{ $json.django_method }}",
+        "url": "={{ $json.django_url.replace('localhost', '127.0.0.1') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.auth_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.django_body }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "104b5ec0-54ff-47c4-8eba-6dcb24464696",
+      "name": "Appel reel API Django",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        528,
+        288
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt And Tools",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt And Tools": {
+      "main": [
+        [
+          {
+            "node": "Utilisateur authentifie ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Utilisateur authentifie ?": {
+      "main": [
+        [
+          {
+            "node": "Gemini Function Calling",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Refus non authentifie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refus non authentifie": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook (refus)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Function Calling": {
+      "main": [
+        [
+          {
+            "node": "Extraire functionCall et preparer requete Django",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire functionCall et preparer requete Django": {
+      "main": [
+        [
+          {
+            "node": "Appel outil necessaire ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appel outil necessaire ?": {
+      "main": [
+        [
+          {
+            "node": "Appel reel API Django",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reponse directe sans outil",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reponse directe sans outil": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook (direct)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reformater le resultat Django": {
+      "main": [
+        [
+          {
+            "node": "Construire prompt final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construire prompt final": {
+      "main": [
+        [
+          {
+            "node": "Gemini reponse finale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini reponse finale": {
+      "main": [
+        [
+          {
+            "node": "Construire reponse finale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construire reponse finale": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook (final)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt And Tools",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appel reel API Django": {
+      "main": [
+        [
+          {
+            "node": "Reformater le resultat Django",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3f90e38e-c4d5-4613-b78c-65856931d123",
+  "meta": {
+    "instanceId": "310f76547641023b1ea227a9c38448488011e305263742c6c74f434e8ce90bb1"
+  },
+  "nodeGroups": [],
+  "id": "hkgMAOtYYYxYHxey",
+  "tags": []
+}

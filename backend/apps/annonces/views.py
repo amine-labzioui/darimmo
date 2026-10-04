@@ -1,8 +1,19 @@
 """
 Vues — Annonces DarImmo
 CRUD complet + recherche/filtrage public + gestion par le propriétaire.
+
+NOTE IMPORTANTE :
+Djongo (l'ORM MongoDB utilisé ici) ne sait pas traduire correctement en
+requête MongoDB les comparaisons numériques (price__gte/__lte sur un champ
+Decimal128) ni les filtres booléens (has_pool, has_parking, is_furnished) —
+cela provoque une DatabaseError. Ces filtres sont donc retirés de
+AnnonceFilter (voir filters.py) et appliqués manuellement en Python dans
+AnnonceViewSet.list(), après récupération des objets depuis la base.
 """
 
+from decimal import Decimal, InvalidOperation
+
+from bson.decimal128 import Decimal128
 from django.db.models import F
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
@@ -38,6 +49,17 @@ class AnnonceViewSet(viewsets.ModelViewSet):
     ordering_fields = ["price", "surface", "created_at", "views_count"]
     ordering = ["-created_at"]
 
+    # Filtres numériques appliqués côté Python (voir note en haut du fichier).
+    # Format : {nom du query param : (nom du champ sur Annonce, lookup)}
+    PYTHON_SIDE_NUMERIC_FILTERS = {
+        "price_min": ("price", "gte"),
+        "price_max": ("price", "lte"),
+        "surface_min": ("surface", "gte"),
+        "bedrooms_min": ("bedrooms", "gte"),
+    }
+    # Filtres booléens appliqués côté Python (voir note en haut du fichier).
+    PYTHON_SIDE_BOOL_FILTERS = ["has_pool", "has_parking", "is_furnished"]
+
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:
             return [permissions.AllowAny()]
@@ -59,6 +81,57 @@ class AnnonceViewSet(viewsets.ModelViewSet):
             qs = qs.filter(status=Annonce.Status.PUBLISHED)
         return qs
 
+    def list(self, request, *args, **kwargs):
+        """
+        Liste publique des annonces, avec :
+        - filtres textuels (city, property_type, transaction_type) appliqués
+          via AnnonceFilter / Djongo (fonctionne correctement)
+        - filtres numériques et booléens appliqués manuellement en Python
+          ci-dessous, pour contourner le bug Djongo sur ces types de
+          comparaisons (voir note en haut du fichier)
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        results = list(queryset)
+        params = request.query_params
+
+        # --- Filtres numériques (price_min, price_max, surface_min, bedrooms_min) ---
+        # Djongo renvoie price/surface sous forme de bson.Decimal128, qui ne
+        # supporte ni float() ni la comparaison directe : on convertit tout
+        # en decimal.Decimal avant de comparer.
+        def to_decimal(v):
+            return v.to_decimal() if isinstance(v, Decimal128) else Decimal(str(v))
+
+        for param_name, (field_name, lookup) in self.PYTHON_SIDE_NUMERIC_FILTERS.items():
+            raw_value = params.get(param_name)
+            if raw_value in (None, ""):
+                continue
+            try:
+                value = Decimal(raw_value.strip())
+            except InvalidOperation:
+                continue  # valeur mal formatée (ex. "abc") : filtre ignoré
+            if not value.is_finite():
+                continue  # "nan", "inf" : filtre ignoré
+            if lookup == "gte":
+                results = [a for a in results if to_decimal(getattr(a, field_name)) >= value]
+            else:
+                results = [a for a in results if to_decimal(getattr(a, field_name)) <= value]
+
+        # --- Filtres booléens (has_pool, has_parking, is_furnished) ---
+        for param_name in self.PYTHON_SIDE_BOOL_FILTERS:
+            raw_value = params.get(param_name)
+            if raw_value in (None, ""):
+                continue
+            wanted = raw_value.lower() in ("true", "1", "yes")
+            results = [a for a in results if bool(getattr(a, param_name)) == wanted]
+
+        page = self.paginate_queryset(results)
+        serializer = self.get_serializer(page if page is not None else results, many=True)
+        return (
+            self.get_paginated_response(serializer.data)
+            if page is not None
+            else Response(serializer.data)
+        )
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -68,8 +141,7 @@ class AnnonceViewSet(viewsets.ModelViewSet):
         if not request.user.is_authenticated or request.user != instance.owner:
             instance.views_count += 1
             instance.save()
-            
-    
+
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated])

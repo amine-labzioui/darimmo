@@ -1,0 +1,11 @@
+﻿attendu \ prédit,search_property,create_listing,update_listing,delete_listing,my_listings,payment_status,contact_owner,account_help,general_help,unknown
+search_property,7,0,0,0,0,0,0,0,0,0
+create_listing,0,7,0,0,0,0,0,0,0,0
+update_listing,0,0,7,0,0,0,0,0,0,0
+delete_listing,0,0,0,7,0,0,0,0,0,0
+my_listings,0,0,0,0,7,0,0,0,0,0
+payment_status,0,0,0,0,0,7,0,0,0,0
+contact_owner,0,0,0,0,0,0,7,0,0,0
+account_help,0,0,0,0,0,0,0,7,0,0
+general_help,0,0,0,0,0,0,0,0,7,0
+unknown,0,0,0,0,0,0,0,0,0,7

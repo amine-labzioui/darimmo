@@ -1,0 +1,1052 @@
+{
+  "name": "Darimmo - Orchestrateur",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "darimmo-ai-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "67de73ba-f58c-4e20-b0c0-e42b9d4860a6",
+      "name": "Webhook Django",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1440,
+        592
+      ],
+      "webhookId": "abefcd2b-697c-45ed-8b9c-3fda0f888739"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Nœud n8n : \"Build Classification Prompt\" (workflow Darimmo - Orchestrateur)\n// Version avec l'intention market_advice (11 intentions au total).\nconst body = $json.body || $json;\n\nconst systemPrompt = `Tu es le module de classification d'intention de l'assistant IA de Darimmo, une plateforme marocaine d'annonces immobilieres.\n\nTa seule tache : analyser le message de l'utilisateur et l'historique de conversation, puis renvoyer UNIQUEMENT un objet JSON valide au format :\n{\n  \"intent\": \"<une des 11 valeurs>\",\n  \"confidence\": <0.0 a 1.0>,\n  \"entities\": { ... },\n  \"needs_clarification\": <bool>,\n  \"clarification_question\": <string ou null>\n}\n\nIntentions possibles : search_property, create_listing, update_listing, delete_listing, my_listings, payment_status, contact_owner, account_help, general_help, market_advice, unknown.\n\nDistinction importante entre account_help et general_help :\n- account_help : questions sur LE COMPTE PERSONNEL de l'utilisateur deja existant (mes preferences, mes favoris, mes infos de profil). Suppose generalement que l'utilisateur est deja inscrit.\n- general_help : questions sur le fonctionnement general de la plateforme (comment creer un compte, comment publier une annonce fonctionne, questions d'un visiteur non inscrit, FAQ generale).\n\nDistinction importante entre market_advice et search_property :\n- market_advice : questions sur le MARCHE immobilier, sans demander d'annonces : prix moyen au m2 d'un quartier ou d'une ville, niveau des prix (\"est-ce cher a Anfa ?\"), evolution ou tendance des prix, conseil d'investissement sur une zone. Exemples : \"combien le metre carre a Maarif ?\", \"ch7al taman dyal metre f Gauthier\", \"quel est le prix moyen d'une villa a Anfa ?\", \"What is the price per m2 in Agdal, Rabat?\".\n- search_property : l'utilisateur veut VOIR ou TROUVER des annonces publiees sur Darimmo (avec ou sans budget). Exemples : \"je cherche un appartement a Casablanca\", \"wrini villas f Marrakech\", \"un appartement a moins de 1 000 000 DH a Rabat\".\n- Si le message parle de prix au m2, de prix moyen, de niveau des prix ou de tendance, c'est market_advice, meme si une ville ou un type de bien est cite.\n\nRegles strictes :\n- N'invente JAMAIS une entite qui n'est pas explicitement dans le message ou l'historique. Une entite absente = null, jamais une supposition.\n- Si le message est ambigu ou hors sujet Darimmo, utilise \"unknown\".\n- Si la confiance est inferieure a 0.6, mets needs_clarification a true et propose une question de clarification courte et polie.\n- Ne reponds jamais avec du texte hors du JSON.`;\n\nconst historyText = (body.conversation_history || [])\n  .map(m => `${m.sender}: ${m.content}`)\n  .join('\\n');\n\nconst userContextText = JSON.stringify(body.user_context || {});\n\nconst fullPrompt = `${systemPrompt}\\n\\nContexte utilisateur : ${userContextText}\\n\\nHistorique de conversation :\\n${historyText}\\n\\nMessage actuel de l'utilisateur : \"${body.message}\"`;\n\nconst geminiRequestBody = {\n  contents: [{ parts: [{ text: fullPrompt }] }],\n  generationConfig: {\n    responseMimeType: \"application/json\",\n    responseSchema: {\n      type: \"OBJECT\",\n      properties: {\n        intent: { type: \"STRING\", enum: [\"search_property\",\"create_listing\",\"update_listing\",\"delete_listing\",\"my_listings\",\"payment_status\",\"contact_owner\",\"account_help\",\"general_help\",\"market_advice\",\"unknown\"] },\n        confidence: { type: \"NUMBER\" },\n        entities: {\n          type: \"OBJECT\",\n          properties: {\n            city: { type: \"STRING\", nullable: true },\n            property_type: { type: \"STRING\", nullable: true },\n            transaction_type: { type: \"STRING\", nullable: true },\n            budget_max: { type: \"NUMBER\", nullable: true },\n            budget_min: { type: \"NUMBER\", nullable: true },\n            bedrooms_min: { type: \"NUMBER\", nullable: true },\n            has_pool: { type: \"BOOLEAN\", nullable: true },\n            has_parking: { type: \"BOOLEAN\", nullable: true },\n            has_garden: { type: \"BOOLEAN\", nullable: true },\n            annonce_id: { type: \"STRING\", nullable: true }\n          }\n        },\n        needs_clarification: { type: \"BOOLEAN\" },\n        clarification_question: { type: \"STRING\", nullable: true }\n      },\n      required: [\"intent\",\"confidence\",\"entities\",\"needs_clarification\"]\n    }\n  }\n};\n\nreturn {\n  json: {\n    session_id: body.session_id,\n    auth_token: body.auth_token || '',\n    user_context: body.user_context || {},\n    original_message: body.message,\n    gemini_request_body: geminiRequestBody\n  }\n};"
+      },
+      "id": "0c2fa526-09c9-4952-8f38-16bcc607c256",
+      "name": "Build Classification Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1216,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "<GEMINI_API_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.gemini_request_body }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "455bc956-85fa-4e3c-ba25-1f0908a96c59",
+      "name": "Gemini Classify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -992,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let classification;\ntry {\n  const rawText = $json.candidates[0].content.parts[0].text;\n  classification = JSON.parse(rawText);\n} catch (e) {\n  classification = {\n    intent: 'unknown',\n    confidence: 0,\n    entities: {},\n    needs_clarification: true,\n    clarification_question: \"Je n'ai pas bien compris votre demande, pouvez-vous reformuler ?\"\n  };\n}\n\nif (classification.confidence < 0.6) {\n  classification.needs_clarification = true;\n  if (!classification.clarification_question) {\n    classification.clarification_question = \"Pouvez-vous preciser votre demande ?\";\n  }\n}\n\nconst prev = $('Build Classification Prompt').item.json;\n\n// Si clarification necessaire, on route directement vers une reponse,\n// peu importe l'intent detecte.\nconst effectiveIntent = classification.needs_clarification ? 'needs_clarification' : classification.intent;\n\nreturn {\n  json: {\n    session_id: prev.session_id,\n    original_message: prev.original_message,\n    intent: classification.intent,\n    effective_intent: effectiveIntent,\n    confidence: classification.confidence,\n    entities: classification.entities,\n    needs_clarification: classification.needs_clarification,\n    clarification_question: classification.clarification_question,\n    auth_token: prev.auth_token,\n    user_context: prev.user_context\n  }\n};"
+      },
+      "id": "50513c5b-da43-4c10-87c5-01621e0bf75b",
+      "name": "Parse & Apply Rules",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.effective_intent }}",
+                    "rightValue": "search_property",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "50fc190c-f92f-4296-8493-9e0f1e55550f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "search_property"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.effective_intent }}",
+                    "rightValue": "create_listing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "316c06ff-fb3b-40ad-bb75-a8d591d59ca1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "listing"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.effective_intent }}",
+                    "rightValue": "update_listing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9a5c4534-f5cd-4165-937e-d1b616fc45c2"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "listing"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.effective_intent }}",
+                    "rightValue": "delete_listing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0fe380f3-d266-4bef-a904-4ec0eec7100e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "listing"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.effective_intent }}",
+                    "rightValue": "my_listings",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "aa03e3fb-791f-4258-ba91-1ff8406ae4ff"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "listing"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.effective_intent }}",
+                    "rightValue": "payment_status",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "40809bd2-7600-42b6-a325-2506db74def8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "payment"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.effective_intent }}",
+                    "rightValue": "contact_owner",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "1398ae1f-86f2-46a1-882a-2d8f6094a1ba"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "communication"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "71a3cf19-0e94-44ec-bc7a-21704a97c3a6",
+                    "leftValue": "={{ $json.effective_intent }}",
+                    "rightValue": "general_help",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "general_help"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "f3a00f2f-9b07-4493-b329-ac3e3024fc0c",
+                    "leftValue": "={{ $json.effective_intent }}",
+                    "rightValue": "market_advice",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "market_advice"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "5becd72e-9547-4d91-a7b8-91925e3d366e",
+      "name": "Switch sur intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -544,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "z5JWRTvMbDzixkDw",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/z5JWRTvMbDzixkDw",
+          "cachedResultName": "Darimmo - Agent Recherche"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ $json.original_message }}",
+            "session_id": "={{ $json.session_id }}",
+            "user_context": "={{ $json.user_context }}",
+            "auth_token": "={{ $json.auth_token }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_context",
+              "displayName": "user_context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            },
+            {
+              "id": "auth_token",
+              "displayName": "auth_token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "2a1a965c-9cda-4546-be47-7f8116b29227",
+      "name": "Execute - Agent Recherche",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "hkgMAOtYYYxYHxey",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/hkgMAOtYYYxYHxey",
+          "cachedResultName": "Darimmo - Agent Annonces"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ $json.original_message }}",
+            "session_id": "={{ $json.session_id }}",
+            "user_context": "={{ $json.user_context }}",
+            "auth_token": "={{ $json.auth_token }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_context",
+              "displayName": "user_context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            },
+            {
+              "id": "auth_token",
+              "displayName": "auth_token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "c88646ad-b5aa-4b36-9de1-bf10356e71e4",
+      "name": "Execute - Agent Annonces",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "QcrKGriWWwOUSi32",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/QcrKGriWWwOUSi32",
+          "cachedResultName": "Darimmo - Agent Paiement"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "auth_token": "={{ $json.auth_token }}",
+            "user_context": "={{ $json.user_context }}",
+            "session_id": "={{ $json.session_id }}",
+            "message": "={{ $json.original_message }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_context",
+              "displayName": "user_context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            },
+            {
+              "id": "auth_token",
+              "displayName": "auth_token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "1382f3db-c073-4d6f-84be-1654476c73bb",
+      "name": "Execute - Agent Paiement",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "qqLPm4sdlgpM3yD1",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/qqLPm4sdlgpM3yD1",
+          "cachedResultName": "Darimmo - Agent Communication"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ $json.original_message }}",
+            "session_id": "={{ $json.session_id }}",
+            "user_context": "={{ $json.user_context }}",
+            "auth_token": "={{ $json.auth_token }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_context",
+              "displayName": "user_context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            },
+            {
+              "id": "auth_token",
+              "displayName": "auth_token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "42adc65a-d955-4d74-8102-71e73ddb131e",
+      "name": "Execute - Agent Communication",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Cas : needs_clarification, account_help, general_help, unknown\n// -> reponse directe, sans sous-agent.\nconst d = $json;\n\nlet reply;\nif (d.needs_clarification) {\n  reply = d.clarification_question;\n} else if (d.effective_intent === 'account_help') {\n  reply = \"Pour les questions sur votre compte, je peux vous aider avec vos informations de base. Pouvez-vous preciser votre question ?\";\n} else if (d.effective_intent === 'general_help') {\n  reply = \"Darimmo est une plateforme d'annonces immobilieres au Maroc. Vous pouvez chercher des biens, publier une annonce, ou nous contacter pour plus d'aide. Que souhaitez-vous savoir ?\";\n} else {\n  reply = \"Je n'ai pas compris votre demande. Je peux vous aider a chercher un bien, gerer vos annonces, consulter vos paiements, ou contacter un proprietaire. Pouvez-vous reformuler ?\";\n}\n\nreturn {\n  json: {\n    reply,\n    session_id: d.session_id,\n    recommended_annonce_ids: [],\n    intent: d.intent,\n    metadata: {\n      confidence: d.confidence,\n      entities: d.entities,\n      agent_used: null,\n      tool_calls_count: 0,\n      llm_calls_count: 1\n    }\n  }\n};"
+      },
+      "id": "41b2f152-aa4a-4ebf-a7ce-fe246f9602d0",
+      "name": "Reponse directe (account/general/unknown)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "f1d240ed-2c4d-4a0d-9445-7c2a354d1f75",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "mongoCollection": {
+          "__rl": true,
+          "value": "help_articles",
+          "mode": "list",
+          "cachedResultName": "help_articles"
+        },
+        "vectorIndexName": "help_articles_vector_index",
+        "prompt": "={{ $json.original_message }}",
+        "topK": 3,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreMongoDBAtlas",
+      "typeVersion": 1.3,
+      "position": [
+        -320,
+        1232
+      ],
+      "id": "af1b369f-098d-4e62-8b37-a10bdfa7fc57",
+      "name": "Retrieve",
+      "credentials": {
+        "mongoDb": {
+          "id": "BhYoHXPiiFIwOvWb",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        1456
+      ],
+      "id": "1e8ca7c1-aaa6-4eac-869b-0ce31ad3ae97",
+      "name": "Embeddings Google Gemini1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "quFFo9xLCq1GGyLH",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prevData = $('Parse & Apply Rules').item.json;\nconst docsArray = $input.all();\n\nconst seen = new Set();\nconst validDocs = docsArray\n  .map(d => d.json.document?.pageContent || d.json.pageContent || d.json.text || '')\n  .filter(text => text.length > 50)\n  .filter(text => {\n    if (seen.has(text)) return false;\n    seen.add(text);\n    return true;\n  });\n\nconst context = validDocs.join('\\n\\n---\\n\\n');\n\nconst prompt = `Tu es l'assistant general de Darimmo, une plateforme marocaine d'annonces immobilieres.\n\nVoici des articles d'aide pertinents trouves dans la base de connaissances :\n${context || \"Aucun article pertinent trouve.\"}\n\nQuestion de l'utilisateur : \"${prevData.original_message}\"\n\nRegles strictes :\n- Base ta reponse UNIQUEMENT sur les articles fournis ci-dessus. N'invente rien.\n- Si aucun article pertinent n'est trouve, dis-le clairement et propose de contacter le support.\n- Reponds TOUJOURS dans la meme langue que le message de l'utilisateur (francais, darija, arabe standard ou anglais).\n- Reponse claire et concise.`;\n\nreturn {\n  json: {\n    gemini_request_body: { contents: [{ role: \"user\", parts: [{ text: prompt }] }] },\n    session_id: prevData.session_id\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        1232
+      ],
+      "id": "1d9d5b0c-a019-4ad1-9055-b5dc0ee99f00",
+      "name": "Construire prompt FAQ"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "<GEMINI_API_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.gemini_request_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        256,
+        1232
+      ],
+      "id": "7b99f342-103d-4fb1-b3fe-a173dc924e4e",
+      "name": "HTTP Request:3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const replyText = $json.candidates[0].content.parts[0].text;\nconst prevData = $('Construire prompt FAQ').item.json;\n\nreturn {\n  json: {\n    reply: replyText,\n    session_id: prevData.session_id,\n    recommended_annonce_ids: [],\n    intent: \"general_help\",\n    metadata: { agent_used: \"faq_rag\", tool_calls_count: 1, llm_calls_count: 1 }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        1232
+      ],
+      "id": "cdc36937-61d3-496e-9824-44e1e92a1ccf",
+      "name": "Construire reponse FAQ finale"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "ZonYIyptlojpf9uP",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ZonYIyptlojpf9uP",
+          "cachedResultName": "Darimmo - Agent Marché"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ $json.original_message }}",
+            "session_id": "={{ $json.session_id }}",
+            "user_context": "={{ $json.user_context }}",
+            "auth_token": "={{ $json.auth_token }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "user_context",
+              "displayName": "user_context",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            },
+            {
+              "id": "auth_token",
+              "displayName": "auth_token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "ff38f1bc-269e-4b7f-aec1-61b89bba33bc",
+      "name": "Execute - Agent Marché",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        784
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Django": {
+      "main": [
+        [
+          {
+            "node": "Build Classification Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Classification Prompt": {
+      "main": [
+        [
+          {
+            "node": "Gemini Classify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Classify": {
+      "main": [
+        [
+          {
+            "node": "Parse & Apply Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Apply Rules": {
+      "main": [
+        [
+          {
+            "node": "Switch sur intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch sur intent": {
+      "main": [
+        [
+          {
+            "node": "Execute - Agent Recherche",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute - Agent Annonces",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute - Agent Annonces",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute - Agent Annonces",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute - Agent Annonces",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute - Agent Paiement",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute - Agent Communication",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retrieve",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute - Agent Marché",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reponse directe (account/general/unknown)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute - Agent Recherche": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute - Agent Annonces": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute - Agent Paiement": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute - Agent Communication": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reponse directe (account/general/unknown)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Retrieve",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construire prompt FAQ": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request:3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request:3": {
+      "main": [
+        [
+          {
+            "node": "Construire reponse FAQ finale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve": {
+      "main": [
+        [
+          {
+            "node": "Construire prompt FAQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construire reponse FAQ finale": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute - Agent Marché": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6b995bf1-24ad-4fbe-a472-4e2ce8a2c9ab",
+  "meta": {
+    "instanceId": "310f76547641023b1ea227a9c38448488011e305263742c6c74f434e8ce90bb1"
+  },
+  "nodeGroups": [],
+  "id": "WswRe2GUB5z2pR1Q",
+  "tags": []
+}

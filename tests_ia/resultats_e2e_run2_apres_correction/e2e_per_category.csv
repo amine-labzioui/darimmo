@@ -1,0 +1,8 @@
+﻿Catégorie,Nombre de messages,Réponses correctes,Taux,Latence moyenne (s),Latence p95 (s),Appels LLM moyens
+Recherche de biens,10,10,1.000,3.95,4.38,3.00
+Mes annonces,2,2,1.000,6.34,6.35,3.00
+Paiements,2,1,0.500,6.84,7.27,3.00
+Refus sans connexion,6,6,1.000,1.37,1.49,1.00
+Faux jeton,1,1,1.000,,,
+FAQ (RAG),8,7,0.875,3.84,4.52,1.88
+Hors périmètre,3,3,1.000,1.43,1.47,1.00

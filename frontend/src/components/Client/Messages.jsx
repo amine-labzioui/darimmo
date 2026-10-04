@@ -7,6 +7,39 @@ import { classNames } from "../../utils/helpers";
 import LoadingSpinner from "../Shared/LoadingSpinner";
 import EmptyState from "../Shared/EmptyState";
 
+// ==========================
+// Rendre les liens cliquables
+// ==========================
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+function linkify(text) {
+  if (!text) return text;
+
+  return text.split(URL_REGEX).map((part, index) => {
+    // Les indices impairs correspondent aux URLs capturées par split()
+    if (index % 2 === 0) return part;
+
+    // Ne pas inclure la ponctuation finale (ex: "voir https://site.com.")
+    const match = part.match(/^(.*?)([.,;:!?)\]]*)$/);
+    const url = match[1];
+    const trailing = match[2];
+
+    return (
+      <span key={index}>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline break-all"
+        >
+          {url}
+        </a>
+        {trailing}
+      </span>
+    );
+  });
+}
+
 export default function Messages() {
   const { user } = useAuth();
 
@@ -296,7 +329,7 @@ export default function Messages() {
 
                   <p className="leading-7 whitespace-pre-wrap">
 
-                    {msg.content}
+                    {linkify(msg.content)}
 
                   </p>
 

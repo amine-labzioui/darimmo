@@ -1,0 +1,287 @@
+{
+  "run_info": {
+    "date": "2026-10-03T15:45:57",
+    "webhook_url": "http://localhost:5678/webhook/darimmo-test-classify",
+    "n_messages": 70
+  },
+  "n_valid": 70,
+  "n_errors": 0,
+  "error_rate": 0.0,
+  "accuracy_on_valid": 1.0,
+  "accuracy_all_requests": 1.0,
+  "macro_avg": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "weighted_avg": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "per_class": {
+    "search_property": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0
+    },
+    "create_listing": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0
+    },
+    "update_listing": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0
+    },
+    "delete_listing": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0
+    },
+    "my_listings": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0
+    },
+    "payment_status": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0
+    },
+    "contact_owner": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0
+    },
+    "account_help": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0
+    },
+    "general_help": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0
+    },
+    "unknown": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0
+    }
+  },
+  "confusion_matrix": {
+    "search_property": {
+      "search_property": 7,
+      "create_listing": 0,
+      "update_listing": 0,
+      "delete_listing": 0,
+      "my_listings": 0,
+      "payment_status": 0,
+      "contact_owner": 0,
+      "account_help": 0,
+      "general_help": 0,
+      "unknown": 0
+    },
+    "create_listing": {
+      "search_property": 0,
+      "create_listing": 7,
+      "update_listing": 0,
+      "delete_listing": 0,
+      "my_listings": 0,
+      "payment_status": 0,
+      "contact_owner": 0,
+      "account_help": 0,
+      "general_help": 0,
+      "unknown": 0
+    },
+    "update_listing": {
+      "search_property": 0,
+      "create_listing": 0,
+      "update_listing": 7,
+      "delete_listing": 0,
+      "my_listings": 0,
+      "payment_status": 0,
+      "contact_owner": 0,
+      "account_help": 0,
+      "general_help": 0,
+      "unknown": 0
+    },
+    "delete_listing": {
+      "search_property": 0,
+      "create_listing": 0,
+      "update_listing": 0,
+      "delete_listing": 7,
+      "my_listings": 0,
+      "payment_status": 0,
+      "contact_owner": 0,
+      "account_help": 0,
+      "general_help": 0,
+      "unknown": 0
+    },
+    "my_listings": {
+      "search_property": 0,
+      "create_listing": 0,
+      "update_listing": 0,
+      "delete_listing": 0,
+      "my_listings": 7,
+      "payment_status": 0,
+      "contact_owner": 0,
+      "account_help": 0,
+      "general_help": 0,
+      "unknown": 0
+    },
+    "payment_status": {
+      "search_property": 0,
+      "create_listing": 0,
+      "update_listing": 0,
+      "delete_listing": 0,
+      "my_listings": 0,
+      "payment_status": 7,
+      "contact_owner": 0,
+      "account_help": 0,
+      "general_help": 0,
+      "unknown": 0
+    },
+    "contact_owner": {
+      "search_property": 0,
+      "create_listing": 0,
+      "update_listing": 0,
+      "delete_listing": 0,
+      "my_listings": 0,
+      "payment_status": 0,
+      "contact_owner": 7,
+      "account_help": 0,
+      "general_help": 0,
+      "unknown": 0
+    },
+    "account_help": {
+      "search_property": 0,
+      "create_listing": 0,
+      "update_listing": 0,
+      "delete_listing": 0,
+      "my_listings": 0,
+      "payment_status": 0,
+      "contact_owner": 0,
+      "account_help": 7,
+      "general_help": 0,
+      "unknown": 0
+    },
+    "general_help": {
+      "search_property": 0,
+      "create_listing": 0,
+      "update_listing": 0,
+      "delete_listing": 0,
+      "my_listings": 0,
+      "payment_status": 0,
+      "contact_owner": 0,
+      "account_help": 0,
+      "general_help": 7,
+      "unknown": 0
+    },
+    "unknown": {
+      "search_property": 0,
+      "create_listing": 0,
+      "update_listing": 0,
+      "delete_listing": 0,
+      "my_listings": 0,
+      "payment_status": 0,
+      "contact_owner": 0,
+      "account_help": 0,
+      "general_help": 0,
+      "unknown": 7
+    }
+  },
+  "accuracy_by_language": {
+    "fr": {
+      "correct": 30,
+      "total": 30,
+      "accuracy": 1.0
+    },
+    "dar": {
+      "correct": 20,
+      "total": 20,
+      "accuracy": 1.0
+    },
+    "en": {
+      "correct": 10,
+      "total": 10,
+      "accuracy": 1.0
+    },
+    "ar": {
+      "correct": 10,
+      "total": 10,
+      "accuracy": 1.0
+    }
+  },
+  "entity_extraction": {
+    "city": {
+      "correct": 6,
+      "total": 6,
+      "accuracy": 1.0
+    },
+    "property_type": {
+      "correct": 5,
+      "total": 5,
+      "accuracy": 1.0
+    },
+    "budget_max": {
+      "correct": 4,
+      "total": 4,
+      "accuracy": 1.0
+    }
+  },
+  "latency": {
+    "mean_ms": 1193.1614285714286,
+    "median_ms": 1190.5,
+    "p95_ms": 1308.5,
+    "min_ms": 1063.1,
+    "max_ms": 1540.5
+  },
+  "clarification_requested": {
+    "count": 6,
+    "rate": 0.08571428571428572
+  },
+  "avg_llm_calls_per_message": 1
+}

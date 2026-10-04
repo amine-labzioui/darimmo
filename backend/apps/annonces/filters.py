@@ -1,29 +1,25 @@
 """
 Filtres — Annonces DarImmo
-Permet la recherche par ville, type, prix, etc. via query params.
-Ex : /api/annonces/?city=Casablanca&property_type=villa&price_min=500000&price_max=3000000
+Permet la recherche par ville, type, etc. via query params.
+Les filtres numériques (price_min/max, surface_min, bedrooms_min) et
+booléens (has_pool, has_parking, is_furnished) ne sont PAS gérés ici :
+Djongo ne sait pas les traduire en requête MongoDB (DatabaseError).
+Ils sont appliqués manuellement en Python dans AnnonceViewSet.list().
 """
 
-import django_filters
+# Use the rest_framework alias which is commonly available when using
+# django-filter with Django REST Framework. This also satisfies
+# linters that expect an importable symbol.
+from django_filters import rest_framework as filters
 
 from .models import Annonce
 
 
-class AnnonceFilter(django_filters.FilterSet):
-    city = django_filters.CharFilter(field_name="city", lookup_expr="iexact")
-    property_type = django_filters.CharFilter(field_name="property_type")
-    transaction_type = django_filters.CharFilter(field_name="transaction_type")
-    price_min = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
-    price_max = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
-    surface_min = django_filters.NumberFilter(field_name="surface", lookup_expr="gte")
-    bedrooms_min = django_filters.NumberFilter(field_name="bedrooms", lookup_expr="gte")
-    has_pool = django_filters.BooleanFilter(field_name="has_pool")
-    has_parking = django_filters.BooleanFilter(field_name="has_parking")
-    is_furnished = django_filters.BooleanFilter(field_name="is_furnished")
+class AnnonceFilter(filters.FilterSet):
+    city = filters.CharFilter(field_name="city", lookup_expr="iexact")
+    property_type = filters.CharFilter(field_name="property_type")
+    transaction_type = filters.CharFilter(field_name="transaction_type")
 
     class Meta:
         model = Annonce
-        fields = [
-            "city", "property_type", "transaction_type", "price_min", "price_max",
-            "surface_min", "bedrooms_min", "has_pool", "has_parking", "is_furnished",
-        ]
+        fields = ["city", "property_type", "transaction_type"]

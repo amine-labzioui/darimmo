@@ -1,0 +1,164 @@
+{
+  "run_info": {
+    "date": "2026-10-03T16:18:19",
+    "orchestrator_url": "http://localhost:5678/webhook/darimmo-ai-chat",
+    "n_messages": 32
+  },
+  "pass_rate_overall": 0.84375,
+  "n_passed": 27,
+  "n_technical_errors": 0,
+  "technical_error_rate": 0.0,
+  "tool_call_success": {
+    "correct": 13,
+    "total": 14,
+    "rate": 0.9285714285714286
+  },
+  "no_invented_listing": {
+    "correct": 10,
+    "total": 10,
+    "rate": 1.0
+  },
+  "exact_search_results": {
+    "correct": 10,
+    "total": 10,
+    "rate": 1.0
+  },
+  "unauthenticated_refusal": {
+    "correct": 5,
+    "total": 6,
+    "rate": 0.8333333333333334
+  },
+  "forged_token_no_leak": {
+    "correct": 1,
+    "total": 1
+  },
+  "data_integrity": {
+    "unchanged": true,
+    "compared_fields": [
+      "my_ids",
+      "public_ids",
+      "transactions_count"
+    ],
+    "before": {
+      "public_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "my_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        10
+      ],
+      "transactions_count": 56
+    },
+    "after": {
+      "public_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "my_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        10
+      ],
+      "transactions_count": 56
+    }
+  },
+  "latency": {
+    "mean_ms": 3469.1774193548385,
+    "median_ms": 3796.2,
+    "p95_ms": 5754.6,
+    "min_ms": 1163.8,
+    "max_ms": 7968.6
+  },
+  "avg_llm_calls_per_message": 2.129032258064516,
+  "by_category": {
+    "search": {
+      "label": "Recherche de biens",
+      "n": 10,
+      "passed": 10,
+      "pass_rate": 1.0,
+      "latency_mean_ms": 3921.37,
+      "latency_p95_ms": 5461.9,
+      "avg_llm_calls": 3
+    },
+    "my_listings": {
+      "label": "Mes annonces",
+      "n": 2,
+      "passed": 0,
+      "pass_rate": 0.0,
+      "latency_mean_ms": 5849.25,
+      "latency_p95_ms": 5943.9,
+      "avg_llm_calls": 3
+    },
+    "payment": {
+      "label": "Paiements",
+      "n": 2,
+      "passed": 1,
+      "pass_rate": 0.5,
+      "latency_mean_ms": 6682.4,
+      "latency_p95_ms": 7968.6,
+      "avg_llm_calls": 3
+    },
+    "security_refusal": {
+      "label": "Refus sans connexion",
+      "n": 6,
+      "passed": 5,
+      "pass_rate": 0.8333333333333334,
+      "latency_mean_ms": 1376.3,
+      "latency_p95_ms": 1617.0,
+      "avg_llm_calls": 1
+    },
+    "security_forged": {
+      "label": "Faux jeton",
+      "n": 1,
+      "passed": 1,
+      "pass_rate": 1.0,
+      "latency_mean_ms": null,
+      "latency_p95_ms": null,
+      "avg_llm_calls": null
+    },
+    "faq": {
+      "label": "FAQ (RAG)",
+      "n": 8,
+      "passed": 7,
+      "pass_rate": 0.875,
+      "latency_mean_ms": 3917.0625,
+      "latency_p95_ms": 4594.5,
+      "avg_llm_calls": 1.875
+    },
+    "out_of_scope": {
+      "label": "Hors périmètre",
+      "n": 3,
+      "passed": 3,
+      "pass_rate": 1.0,
+      "latency_mean_ms": 1224.4,
+      "latency_p95_ms": 1276.4,
+      "avg_llm_calls": 1
+    }
+  }
+}

@@ -1,0 +1,539 @@
+{
+  "name": "Darimmo - Agent Paiement",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "darimmo-agent-paiement",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b9e793f7-f8bb-4e6a-84f0-297f43715e33",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        192
+      ],
+      "webhookId": "3be3fcc7-bff3-4836-99c7-1e043a5901f1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body || $json;\n\nconst isAuthenticated = !!(body.user_context && body.user_context.is_authenticated);\nconst authToken = body.auth_token || '';\nconst userMessage = body.message;\nconst sessionId = body.session_id || 'unknown';\n\nconst systemPrompt = `Tu es l'agent paiement de Darimmo, une plateforme marocaine d'annonces immobilieres.\n\nTon role : informer un utilisateur AUTHENTIFIE sur le statut de ses propres transactions (boost d'annonce, etc.).\n\nRegles strictes :\n- N'invente aucune information sur une transaction. Toute information doit provenir du resultat d'un outil.\n- Ne donne jamais d'information sur une transaction qui n'appartient pas a l'utilisateur connecte.\n- Si un statut est failed ou pending, explique en langage clair sans inventer de cause technique precise que l'outil n'a pas fournie ; propose de contacter le support si le probleme persiste.\n- N'effectue AUCUNE action de paiement toi-meme (tu ne crees ni ne modifies de transaction) - redirige vers les fonctionnalites de paiement existantes du site pour toute nouvelle operation (ex: booster une annonce se fait depuis la page de l'annonce).\n- Reponds TOUJOURS dans la meme langue que le message de l'utilisateur. Si l'utilisateur ecrit en darija (arabe marocain, en caracteres latins ou arabes), en arabe standard, en francais ou en anglais, reponds dans cette meme langue.`;\n\nconst tools = [\n  {\n    name: \"get_payment_status\",\n    description: \"Recupere le statut d'une transaction precise de l'utilisateur connecte, par son identifiant.\",\n    parameters: {\n      type: \"OBJECT\",\n      properties: {\n        transaction_id: { type: \"NUMBER\" }\n      },\n      required: [\"transaction_id\"]\n    }\n  },\n  {\n    name: \"list_my_transactions\",\n    description: \"Liste toutes les transactions de l'utilisateur connecte (boosts d'annonces, paiements, etc.).\",\n    parameters: { type: \"OBJECT\", properties: {} }\n  }\n];\n\nreturn {\n  json: {\n    is_authenticated: isAuthenticated,\n    auth_token: authToken,\n    original_user_message: userMessage,\n    session_id: sessionId,\n    gemini_request_body: {\n      contents: [{ role: \"user\", parts: [{ text: `${systemPrompt}\\n\\nMessage de l'utilisateur : \"${userMessage}\"` }] }],\n      tools: [{ functionDeclarations: tools }]\n    }\n  }\n};"
+      },
+      "id": "c959ea54-f971-4673-aa0f-d1b8dc90baa6",
+      "name": "Build Prompt And Tools",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "auth-check",
+              "leftValue": "={{ $json.is_authenticated }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5c05df12-36ac-4088-8941-eec79e695587",
+      "name": "Utilisateur authentifie ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    reply: \"Vous devez etre connecte pour consulter vos paiements. Merci de vous connecter puis de reessayer.\",\n    session_id: $json.session_id,\n    recommended_annonce_ids: [],\n    intent: \"payment_status\",\n    metadata: { agent_used: \"payment_agent\", tool_calls_count: 0, llm_calls_count: 0 }\n  }\n};"
+      },
+      "id": "e92014e2-e844-4c8f-9c42-c2d269f22ac3",
+      "name": "Refus non authentifie",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "f528509d-4f01-45bc-b47e-b98606109df0",
+      "name": "Respond to Webhook (refus)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "<GEMINI_API_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.gemini_request_body }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "cd1b70f0-8be1-4d72-a005-ff3f52a84982",
+      "name": "Gemini Function Calling",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const prevData = $('Build Prompt And Tools').item.json;\nconst candidate = $json.candidates[0];\nconst parts = candidate.content.parts;\nconst functionCallPart = parts.find(p => p.functionCall);\n\nif (!functionCallPart) {\n  const textPart = parts.find(p => p.text);\n  return {\n    json: {\n      needs_tool_call: false,\n      direct_reply: textPart ? textPart.text : \"Je n'ai pas compris votre demande.\",\n      session_id: prevData.session_id\n    }\n  };\n}\n\nconst toolName = functionCallPart.functionCall.name;\nconst args = functionCallPart.functionCall.args;\nconst authToken = prevData.auth_token;\n\nlet django_url = '';\n\nif (toolName === 'get_payment_status') {\n  django_url = 'http://127.0.0.1:8000/api/payments/transactions/' + args.transaction_id + '/';\n} else if (toolName === 'list_my_transactions') {\n  django_url = 'http://127.0.0.1:8000/api/payments/transactions/';\n}\n\nreturn {\n  json: {\n    needs_tool_call: true,\n    tool_name: toolName,\n    tool_args: args,\n    django_method: 'GET',\n    django_url,\n    auth_token: authToken,\n    original_user_message: prevData.original_user_message,\n    session_id: prevData.session_id\n  }\n};"
+      },
+      "id": "f3f81ca6-baa4-44c2-a02f-f459f2318b79",
+      "name": "Extraire functionCall et preparer requete Django",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "needs-tool",
+              "leftValue": "={{ $json.needs_tool_call }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "633e9214-d435-4236-a8f0-777e3804b30e",
+      "name": "Appel outil necessaire ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        448,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    reply: $json.direct_reply,\n    session_id: $json.session_id,\n    recommended_annonce_ids: [],\n    intent: \"payment_status\",\n    metadata: { agent_used: \"payment_agent\", tool_calls_count: 0, llm_calls_count: 1 }\n  }\n};"
+      },
+      "id": "2454db99-2c94-4dc9-aae9-7f11611dff0f",
+      "name": "Reponse directe sans outil",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "36690a4d-16ec-4423-8c71-abc4b6b50ae2",
+      "name": "Respond to Webhook (direct)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "={{ $json.django_method }}",
+        "url": "={{ $json.django_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.auth_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "a3715023-fc3e-4327-bc08-6841199e2dd0",
+      "name": "Appel reel API Django",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const prevData = $('Extraire functionCall et preparer requete Django').item.json;\nconst djangoResult = $json;\n\nreturn {\n  json: {\n    tool_name: prevData.tool_name,\n    tool_result: djangoResult,\n    original_user_message: prevData.original_user_message,\n    session_id: prevData.session_id\n  }\n};"
+      },
+      "id": "7963f9ab-0ed3-4b85-955f-07f67bc9d0c7",
+      "name": "Reformater le resultat Django",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const d = $json;\n\nconst prompt = `Tu es l'agent paiement de Darimmo.\n\nOutil appele : ${d.tool_name}\nResultat retourne par l'API : ${JSON.stringify(d.tool_result)}\n\nMessage original de l'utilisateur : \"${d.original_user_message}\"\n\nRegles strictes :\n- Base ta reponse UNIQUEMENT sur le resultat fourni ci-dessus. N'invente rien.\n- Si le resultat contient une erreur (ex: 403, 404), explique clairement que cette transaction n'est pas accessible ou n'existe pas, sans detailler la cause technique.\n- Si le statut est failed ou pending, explique en langage clair et propose de contacter le support si besoin.\n- N'effectue aucune action de paiement toi-meme.\n- Reponds TOUJOURS dans la meme langue que le message de l'utilisateur. Si l'utilisateur ecrit en darija (arabe marocain, en caracteres latins ou arabes), en arabe standard, en francais ou en anglais, reponds dans cette meme langue.`;\n\nreturn {\n  json: {\n    gemini_request_body: { contents: [{ role: \"user\", parts: [{ text: prompt }] }] },\n    session_id: d.session_id\n  }\n};"
+      },
+      "id": "8d3f113e-93ee-4bbe-b317-d10976fee653",
+      "name": "Construire prompt final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "<GEMINI_API_KEY>"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.gemini_request_body }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "3f9bf906-adcc-44b8-8b7b-46dccd654658",
+      "name": "Gemini reponse finale",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1328,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const replyText = $json.candidates[0].content.parts[0].text;\nconst prevData = $('Construire prompt final').item.json;\n\nreturn {\n  json: {\n    reply: replyText,\n    session_id: prevData.session_id,\n    recommended_annonce_ids: [],\n    intent: \"payment_status\",\n    metadata: { agent_used: \"payment_agent\", tool_calls_count: 1, llm_calls_count: 2 }\n  }\n};"
+      },
+      "id": "f53e8f75-c561-4119-9dad-c4e7ed37d17b",
+      "name": "Construire reponse finale",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "958d7021-c2c5-44b3-bec3-1597eb9f6f28",
+      "name": "Respond to Webhook (final)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        1760,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "message"
+            },
+            {
+              "name": "session_id"
+            },
+            {
+              "name": "user_context",
+              "type": "object"
+            },
+            {
+              "name": "auth_token"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -656,
+        -16
+      ],
+      "id": "8fb29339-f3f6-417d-bb82-beaa17e84838",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt And Tools",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt And Tools": {
+      "main": [
+        [
+          {
+            "node": "Utilisateur authentifie ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Utilisateur authentifie ?": {
+      "main": [
+        [
+          {
+            "node": "Gemini Function Calling",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Refus non authentifie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refus non authentifie": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook (refus)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Function Calling": {
+      "main": [
+        [
+          {
+            "node": "Extraire functionCall et preparer requete Django",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire functionCall et preparer requete Django": {
+      "main": [
+        [
+          {
+            "node": "Appel outil necessaire ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appel outil necessaire ?": {
+      "main": [
+        [
+          {
+            "node": "Appel reel API Django",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reponse directe sans outil",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reponse directe sans outil": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook (direct)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appel reel API Django": {
+      "main": [
+        [
+          {
+            "node": "Reformater le resultat Django",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reformater le resultat Django": {
+      "main": [
+        [
+          {
+            "node": "Construire prompt final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construire prompt final": {
+      "main": [
+        [
+          {
+            "node": "Gemini reponse finale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini reponse finale": {
+      "main": [
+        [
+          {
+            "node": "Construire reponse finale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construire reponse finale": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook (final)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt And Tools",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "102faed0-a9d7-4579-a350-5db0ea239ce2",
+  "meta": {
+    "instanceId": "310f76547641023b1ea227a9c38448488011e305263742c6c74f434e8ce90bb1"
+  },
+  "nodeGroups": [],
+  "id": "QcrKGriWWwOUSi32",
+  "tags": []
+}

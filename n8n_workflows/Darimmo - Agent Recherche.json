@@ -1,0 +1,322 @@
+{
+  "name": "Darimmo - Agent Recherche",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "<GEMINI_API_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.gemini_request_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        432,
+        -96
+      ],
+      "id": "24029fee-f099-4bd6-82a1-5fbcf5f1fe9a",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const candidate = $json.candidates[0];\nconst parts = candidate.content.parts;\n\nconst functionCallPart = parts.find(p => p.functionCall);\n\nif (!functionCallPart) {\n  const textPart = parts.find(p => p.text);\n  return {\n    json: {\n      direct_reply: textPart ? textPart.text : \"Je n'ai pas compris votre demande.\",\n      needs_tool_call: false\n    }\n  };\n}\n\nconst args = functionCallPart.functionCall.args;\n\nconst CITY_NORMALIZATION_MAP = {\n  \"marrakech\": \"Marrakesh\",\n  \"marrakesh\": \"Marrakesh\",\n  \"casablanca\": \"Casablanca\",\n  \"casa\": \"Casablanca\",\n  \"rabat\": \"Rabat\",\n  \"agadir\": \"Agadir\",\n  \"tanger\": \"Tanger\",\n  \"tangier\": \"Tanger\",\n  \"fes\": \"Fès\",\n  \"fès\": \"Fès\",\n  \"fez\": \"Fès\"\n};\n\nfunction normalizeCity(rawCity) {\n  if (!rawCity) return rawCity;\n  const key = rawCity.trim().toLowerCase();\n  return CITY_NORMALIZATION_MAP[key] || rawCity;\n}\n\nif (args.city) {\n  args.city = normalizeCity(args.city);\n}\n\nconst queryParts = [];\nif (args.city) queryParts.push('city=' + encodeURIComponent(args.city));\nif (args.property_type) queryParts.push('property_type=' + encodeURIComponent(args.property_type));\nif (args.transaction_type) queryParts.push('transaction_type=' + encodeURIComponent(args.transaction_type));\nif (args.price_max) queryParts.push('price_max=' + encodeURIComponent(args.price_max));\nif (args.price_min) queryParts.push('price_min=' + encodeURIComponent(args.price_min));\nif (args.bedrooms_min) queryParts.push('bedrooms_min=' + encodeURIComponent(args.bedrooms_min));\nif (args.has_pool) queryParts.push('has_pool=true');\nif (args.has_parking) queryParts.push('has_parking=true');\nif (args.has_garden) queryParts.push('has_garden=true');\n\nconst queryString = queryParts.join('&');\n\nconst prevNodeData = $('Build Prompt').item.json;\n\nreturn {\n  json: {\n    needs_tool_call: true,\n    tool_args: args,\n    query_string: queryString,\n    original_user_message: prevNodeData.user_message,\n    session_id: prevNodeData.session_id\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        -96
+      ],
+      "id": "30458c35-c22a-4a59-a602-b42b63149f73",
+      "name": "extraire les arguments du functionCall"
+    },
+    {
+      "parameters": {
+        "url": "=http://127.0.0.1:8000/api/annonces/?{{ $json.query_string }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        880,
+        -96
+      ],
+      "id": "8b39d699-9c17-43df-830e-2130c1c68011",
+      "name": "appel réel à l'API Django"
+    },
+    {
+      "parameters": {
+        "jsCode": "const searchResults = $json; // résultat brut de l'API Django\nconst prevData = $('extraire les arguments du functionCall').item.json;\n\nconst annonces = searchResults.results || searchResults;\nconst annoncesArray = Array.isArray(annonces) ? annonces : [];\n\nconst toolResultSummary = {\n  count: annoncesArray.length,\n  annonces: annoncesArray.slice(0, 5).map(a => ({\n    id: a.id,\n    title: a.title,\n    city: a.city,\n    price: a.price,\n    property_type: a.property_type,\n    bedrooms: a.bedrooms,\n    has_pool: a.has_pool\n  }))\n};\n\n// Les ids des annonces trouvées, pour les renvoyer au frontend (recommended_annonce_ids)\nconst annonceIds = annoncesArray.slice(0, 5).map(a => a.id);\n\nreturn {\n  json: {\n    tool_result_summary: toolResultSummary,\n    original_user_message: prevData.original_user_message,\n    annonce_ids: annonceIds,\n    session_id: prevData.session_id\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        -96
+      ],
+      "id": "f6a5645b-2f26-4130-9bec-9fa60ffcea41",
+      "name": "reformater le résultat pour le renvoyer à Gemini"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prevData = $json; // tool_result_summary + original_user_message\n\nconst systemPrompt = `Tu es l'agent de recherche immobilière de Darimmo.\n\nVoici le résultat de la recherche effectuée dans la base de données :\n${JSON.stringify(prevData.tool_result_summary)}\n\nMessage original de l'utilisateur : \"${prevData.original_user_message}\"\n\nRègles strictes :\n- Base ta réponse UNIQUEMENT sur les résultats fournis ci-dessus. N'invente aucune annonce.\n- Si count est 0, dis clairement qu'aucun bien ne correspond aux critères, et suggère d'élargir la recherche (ville voisine, budget plus large, ou retirer un critère comme la piscine).\n- Si des annonces sont trouvées, présente-les brièvement (titre, ville, prix) en langage naturel, clair et concis.\n- Reponds TOUJOURS dans la meme langue que le message de l'utilisateur. Si l'utilisateur ecrit en darija (arabe marocain, en caracteres latins ou arabes), en arabe standard, en francais ou en anglais, reponds dans cette meme langue.`;\n\nreturn {\n  json: {\n    gemini_request_body: {\n      contents: [\n        { role: \"user\", parts: [{ text: systemPrompt }] }\n      ]\n    },\n    session_id: prevData.session_id\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        -96
+      ],
+      "id": "de36668a-243e-44f1-a2b6-5c0787ca5a1c",
+      "name": "reformater le résultat"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "<GEMINI_API_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.gemini_request_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1552,
+        -96
+      ],
+      "id": "da6f04c2-9bef-4e9a-82f3-436b62e1f838",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "darimmo-agent-recherche",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "1d010f09-46ad-4b88-b5b8-7676de5560eb",
+      "name": "Webhook",
+      "webhookId": "02bb91b2-49f1-4b96-b4c0-fae7e512e02e"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2000,
+        -96
+      ],
+      "id": "18c2f3cf-e6cb-469a-93b3-7c50f7bea4d5",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "message"
+            },
+            {
+              "name": "session_id"
+            },
+            {
+              "name": "user_context",
+              "type": "object"
+            },
+            {
+              "name": "auth_token"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        -192
+      ],
+      "id": "5cb454cf-719d-4193-bdc0-7d8e04484d29",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst userMessage = body.message;\nconst sessionId = body.session_id || 'unknown';\nconst userContext = body.user_context || {};\nconst authToken = body.auth_token || '';\n\nconst systemPrompt = `Tu es l'agent de recherche immobilière de Darimmo, une plateforme marocaine d'annonces immobilières.\n\nTon rôle : aider l'utilisateur à trouver des annonces réelles publiées sur Darimmo, en utilisant tes outils. Tu ne connais AUCUNE annonce par toi-même — toute information sur un bien doit provenir du résultat d'un outil.\n\nRègles strictes :\n- Utilise l'outil search_property pour chercher les annonces.\n- Si aucun paramètre minimal n'est fourni (ni ville, ni type de bien, ni budget), pose une question de clarification au lieu d'appeler l'outil.\n- Si l'outil renvoie une liste vide, dis-le clairement. Ne suggère jamais une annonce qui ne vient pas du résultat de l'outil.\n- Réponds en langage naturel, clair et concis, en citant le nombre de résultats trouvés.\n-Reponds TOUJOURS dans la meme langue que le message de l'utilisateur. Si l'utilisateur ecrit en darija (arabe marocain, en caracteres latins ou arabes), en arabe standard, en francais ou en anglais, reponds dans cette meme langue.`;\n\nconst toolDeclaration = {\n  name: \"search_property\",\n  description: \"Recherche des annonces immobilières publiées sur Darimmo selon des critères structurés.\",\n  parameters: {\n    type: \"OBJECT\",\n    properties: {\n      city: { type: \"STRING\", description: \"Ville recherchée\" },\n      property_type: { type: \"STRING\", enum: [\"villa\",\"appartement\",\"riad\",\"maison\",\"terrain\"] },\n      transaction_type: { type: \"STRING\", enum: [\"vente\",\"location\"] },\n      price_max: { type: \"NUMBER\" },\n      price_min: { type: \"NUMBER\" },\n      bedrooms_min: { type: \"NUMBER\" },\n      has_pool: { type: \"BOOLEAN\" },\n      has_parking: { type: \"BOOLEAN\" },\n      has_garden: { type: \"BOOLEAN\" }\n    }\n  }\n};\n\nreturn {\n  json: {\n    user_message: userMessage,\n    session_id: sessionId,\n    user_context: userContext,\n    auth_token: authToken,\n    gemini_request_body: {\n      contents: [\n        { role: \"user\", parts: [{ text: `${systemPrompt}\\n\\nMessage de l'utilisateur : \"${userMessage}\"` }] }\n      ],\n      tools: [{ functionDeclarations: [toolDeclaration] }]\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        -96
+      ],
+      "id": "5e2e793e-a385-4af2-8440-96e6f3556db1",
+      "name": "Build Prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "const replyText = $json.candidates[0].content.parts[0].text;\nconst annonceIds = $('reformater le résultat pour le renvoyer à Gemini').item.json.annonce_ids;\nconst sessionId = $json.session_id;\n\nconst FRONTEND_URL = 'http://localhost:5173';\nconst annonceLinks = (annonceIds || []).map(id => `${FRONTEND_URL}/annonces/${id}`);\n\n// Ajoute les liens a la fin du texte de reponse, un par annonce.\nlet finalReply = replyText;\nif (annonceLinks.length > 0) {\n  const linksText = annonceLinks.map((link, i) => `Lien : ${link}`).join('\\n');\n  finalReply = `${replyText}\\n\\n${linksText}`;\n}\n\nreturn {\n  json: {\n    reply: finalReply,\n    session_id: sessionId,\n    recommended_annonce_ids: annonceIds || [],\n    intent: \"search_property\",\n    metadata: {\n      agent_used: \"property_search_agent\",\n      tool_calls_count: 1,\n      llm_calls_count: 2\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        -96
+      ],
+      "id": "14bd3487-90e8-47c6-b353-1b9fca023daa",
+      "name": "Construire réponse finale"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "extraire les arguments du functionCall",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extraire les arguments du functionCall": {
+      "main": [
+        [
+          {
+            "node": "appel réel à l'API Django",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "appel réel à l'API Django": {
+      "main": [
+        [
+          {
+            "node": "reformater le résultat pour le renvoyer à Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reformater le résultat pour le renvoyer à Gemini": {
+      "main": [
+        [
+          {
+            "node": "reformater le résultat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reformater le résultat": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Construire réponse finale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construire réponse finale": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0fa8fd21-77a7-4056-a6a8-c06b545ba68a",
+  "meta": {
+    "instanceId": "310f76547641023b1ea227a9c38448488011e305263742c6c74f434e8ce90bb1"
+  },
+  "nodeGroups": [],
+  "id": "z5JWRTvMbDzixkDw",
+  "tags": []
+}

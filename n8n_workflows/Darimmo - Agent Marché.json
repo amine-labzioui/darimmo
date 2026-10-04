@@ -1,0 +1,311 @@
+{
+  "name": "Darimmo - Agent Marché",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "message"
+            },
+            {
+              "name": "session_id"
+            },
+            {
+              "name": "user_context",
+              "type": "object"
+            },
+            {
+              "name": "auth_token"
+            }
+          ]
+        }
+      },
+      "id": "accbc1e7-e4ee-4190-ae3c-34d3a35b0fa0",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        2528,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "darimmo-agent-marche",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1065db70-dc80-4107-8a7d-2e17a226bc23",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        2528,
+        1088
+      ],
+      "webhookId": "db2465ab-7e0b-4b1a-ba40-9dbdf7d61c1d"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Lit l'entrée et prépare l'appel Gemini de reformulation de la requête\nconst input = $input.first().json;\nconst body = input.body || input;\n\n// message (sous-workflow / webhook) ou original_message (item complet de l'orchestrateur)\nconst userMessage = (body.message || body.original_message || '').toString().trim();\nconst sessionId = body.session_id || 'unknown';\nlet userContext = body.user_context || {};\nif (typeof userContext === 'string') {\n  try { userContext = JSON.parse(userContext); } catch (e) { userContext = {}; }\n}\n\nconst rewritePrompt = `Tu transformes la question d'un client sur le marché immobilier marocain en requête de recherche web en français.\nRéponds UNIQUEMENT avec un objet JSON, sans texte autour :\n{\"query\": \"\", \"quartier\": \"\", \"ville\": \"\", \"type_bien\": \"\", \"langue\": \"\"}\n\nRègles :\n- query : au format \"prix m2 <type_bien> <quartier> <ville>\" (sans quartier ou sans ville s'ils sont absents du message).\n- Corrige seulement l'orthographe et les abréviations courantes (casa -> Casablanca, maarif -> Maarif). N'ajoute aucun lieu absent du message.\n- type_bien : appartement, villa, maison, terrain, bureau ou local. Par défaut : appartement.\n- langue : \"darija_latin\" (darija en lettres latines), \"darija_arabe\" (darija en lettres arabes), \"ar\" (arabe standard), \"fr\" ou \"en\".\n- Si une information manque, mets \"\".\n\nMessage du client : \"${userMessage.replace(/\"/g, \"'\")}\"`;\n\nreturn [{\n  json: {\n    user_message: userMessage,\n    session_id: sessionId,\n    user_context: userContext,\n    rewrite_request_body: {\n      contents: [{ role: \"user\", parts: [{ text: rewritePrompt }] }],\n      generationConfig: { temperature: 0, responseMimeType: \"application/json\" }\n    }\n  }\n}];\n"
+      },
+      "id": "b6a3cd50-309b-4284-9366-8486fe9f73b4",
+      "name": "Préparer recherche",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2768,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.rewrite_request_body) }}",
+        "options": {}
+      },
+      "id": "90d64440-1458-4f93-a80b-4fbdf1eea9d2",
+      "name": "Reformuler requête",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3008,
+        976
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "quFFo9xLCq1GGyLH",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 2) Lit la reformulation (avec repli sur le message brut) et prépare Tavily\nconst prep = $('Préparer recherche').first().json;\nconst g = $input.first().json;\n\nlet parsed = null;\nlet rewriteError = null;\ntry {\n  const text = (g.candidates[0].content.parts || []).map(p => p.text || '').join('');\n  parsed = JSON.parse(text.replace(/```json|```/g, '').trim());\n} catch (e) {\n  rewriteError = g.error ? (g.error.message || 'gemini_error') : 'parse_error';\n}\n\nconst str = (v) => (typeof v === 'string' ? v.trim() : '');\nconst rewritten = str(parsed && parsed.query);\nconst query = rewritten || prep.user_message;\n\n// Sites immobiliers marocains autorisés comme sources\nconst DOMAINES = [\"mubawab.ma\", \"yakeey.com\", \"agenz.ma\", \"sarouty.ma\", \"avito.ma\"];\n\nreturn [{\n  json: {\n    user_message: prep.user_message,\n    session_id: prep.session_id,\n    search_query: query.slice(0, 400),\n    query_rewritten: rewritten !== '',\n    rewrite_error: rewriteError,\n    quartier: str(parsed && parsed.quartier),\n    ville: str(parsed && parsed.ville),\n    type_bien: str(parsed && parsed.type_bien) || 'appartement',\n    langue: str(parsed && parsed.langue),\n    tavily_body: {\n      query: query.slice(0, 400),\n      search_depth: \"advanced\",\n      max_results: 5,\n      include_answer: false,\n      include_domains: DOMAINES\n    }\n  }\n}];\n"
+      },
+      "id": "607b1f47-df54-429f-9ddd-5b0960b6b159",
+      "name": "Préparer Tavily",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3248,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.tavily_body) }}",
+        "options": {}
+      },
+      "id": "33c1854a-7f93-467b-b1b3-0856492841f7",
+      "name": "Tavily Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3488,
+        976
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "h3eb7u2qbnDdxrdD",
+          "name": "Tavily API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 3) Construit le prompt de synthèse à partir des résultats Tavily numérotés\nconst prep = $('Préparer Tavily').first().json;\nconst tav = $input.first().json;\n\nconst results = Array.isArray(tav.results) ? tav.results : [];\nconst tavilyError = tav.error ? (tav.error.message || JSON.stringify(tav.error)) : null;\n\n// new URL() n'est pas disponible dans le sandbox n8n : extraction par regex\nconst getDomain = (url) => {\n  const m = (url || '').match(/^https?:\\/\\/(?:www\\.)?([^\\/?#]+)/i);\n  return m ? m[1].toLowerCase() : '';\n};\n\nconst sources = results.map((r, i) => ({\n  n: i + 1,\n  title: r.title || '',\n  url: r.url || '',\n  domain: getDomain(r.url),\n  content: (r.content || '').replace(/\\s+/g, ' ').slice(0, 1500)\n}));\n\nconst today = new Date().toISOString().slice(0, 10);\n\n// Les noms de sites ne sont pas donnés au modèle (seulement titre + contenu)\nconst sourcesText = sources.length > 0\n  ? sources.map(s => `[${s.n}] ${s.title}\\n${s.content}`).join('\\n\\n')\n  : 'AUCUNE SOURCE TROUVÉE.';\n\nconst LANGUES = {\n  darija_latin: \"en darija marocaine écrite en lettres latines (comme le client)\",\n  darija_arabe: \"en darija marocaine écrite en lettres arabes\",\n  ar: \"en arabe standard\",\n  fr: \"en français\",\n  en: \"en anglais\"\n};\nconst consigneLangue = LANGUES[prep.langue] || \"dans la même langue que le message du client\";\n\nconst demande = `Quartier demandé : ${prep.quartier || 'non précisé'} | Ville : ${prep.ville || 'non précisée'} | Type de bien : ${prep.type_bien}`;\n\nconst systemPrompt = `Tu es le conseiller marché immobilier de Darimmo, une plateforme marocaine d'annonces immobilières.\nTu réponds UNIQUEMENT à partir des sources numérotées ci-dessous (résultats d'une recherche web effectuée le ${today}). Tu ne connais aucun prix par toi-même.\n\nObjectif : donner au client le prix au m² demandé, en une réponse très courte : prix moyen au m² et, si la source la donne, la fourchette (minimum - maximum). Rien d'autre.\n\nRègles strictes :\n1. Utilise uniquement les référentiels de prix au m² (pages de type \"prix au m²\", \"référentiel\", \"carte des prix\"). N'utilise PAS les annonces individuelles, ni des chiffres anciens datés d'années passées, et ne cite aucun exemple d'annonce.\n2. Chaque chiffre que tu donnes doit apparaître tel quel dans une source, suivi de son numéro entre crochets, par exemple [2]. N'invente aucun chiffre, ne calcule rien, ne fais pas de moyenne.\n3. Le type de bien doit correspondre à la demande. Ne mélange jamais les chiffres des appartements et des villas.\n4. Format fréquent des référentiels : \"Appartements 11 012 DH/m² Prix m2 moyen 8 607 DH/m² 12 664 DH/m²\" signifie : prix moyen 11 012 DH/m², fourchette de 8 607 à 12 664 DH/m². Si le texte ne suit pas clairement ce format, ou si tu n'es pas sûr du sens d'un chiffre (moyenne ou borne, appartement ou villa, vente ou location), ne l'utilise pas.\n5. Quartier : utilise en priorité un référentiel du quartier demandé. S'il n'y en a pas, mais qu'il existe des référentiels de sous-quartiers clairement rattachés au quartier demandé (titre du type \"Palmier (Maarif)\"), donne au maximum 2 sous-quartiers, en précisant pour chacun qu'il s'agit d'une partie du quartier, chacun avec ses propres chiffres. N'utilise jamais un autre quartier non rattaché, ni un chiffre de la ville entière pour un quartier.\n6. Si aucun référentiel fiable ne convient, dis simplement (dans la langue demandée) que tu n'as pas trouvé d'information fiable sur le prix au m² de ce quartier, sans aucun chiffre.\n7. Date : si la source utilisée indique une date de mise à jour, mentionne-la ; sinon indique que ce sont des estimations consultées le ${today}. N'invente aucune date.\n8. Ne mentionne aucun nom de site, de plateforme ou d'agence, et aucune URL. Parle de \"référentiels de prix du marché\".\n9. Si tu donnes un chiffre, termine par une phrase courte : le prix est indicatif et dépend de la surface, de l'étage et de l'état du bien.\n10. Si la question ne concerne pas les prix ou le marché immobilier, réponds brièvement que tu traites les questions de prix et de marché immobilier.\n11. LANGUE : réponds ${consigneLangue}. Toute la réponse, y compris la phrase de la règle 6, doit être dans cette langue.\n12. Pas de Markdown (pas de ** ni de #, pas de liste). 70 mots maximum.`;\n\nconst prompt = `${systemPrompt}\\n\\nDEMANDE : ${demande}\\n\\nSOURCES :\\n${sourcesText}\\n\\nMessage du client : \"${prep.user_message}\"`;\n\nreturn [{\n  json: {\n    user_message: prep.user_message,\n    session_id: prep.session_id,\n    search_query: prep.search_query,\n    query_rewritten: prep.query_rewritten,\n    rewrite_error: prep.rewrite_error,\n    langue: prep.langue,\n    today,\n    sources,\n    tavily_error: tavilyError,\n    gemini_request_body: {\n      contents: [{ role: \"user\", parts: [{ text: prompt }] }],\n      generationConfig: { temperature: 0.2 }\n    }\n  }\n}];\n"
+      },
+      "id": "eb928103-f22f-44ae-af95-770b02b01abc",
+      "name": "Construire prompt marché",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3728,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.gemini_request_body) }}",
+        "options": {}
+      },
+      "id": "709449bf-5b4b-4378-bb45-3714c07dd39c",
+      "name": "Gemini synthèse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3968,
+        976
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "quFFo9xLCq1GGyLH",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 4) Réponse courte pour le client (sans liens ni noms de sites)\n// Les sources citées sont gardées uniquement dans metadata (non affichées)\nconst prep = $('Construire prompt marché').first().json;\nconst g = $input.first().json;\n\nlet rawReply = '';\ntry {\n  rawReply = (g.candidates[0].content.parts || []).map(p => p.text || '').join('').trim();\n} catch (e) {\n  rawReply = '';\n}\nconst geminiError = g.error ? (g.error.message || JSON.stringify(g.error)) : null;\n\n// Sources citées ([1], [2], [1, 3]...) -> metadata uniquement\nconst sources = prep.sources || [];\nconst citedNumbers = new Set();\nfor (const m of rawReply.matchAll(/\\[(\\d+(?:\\s*,\\s*\\d+)*)\\]/g)) {\n  m[1].split(',').forEach(x => citedNumbers.add(parseInt(x.trim(), 10)));\n}\nconst citedSources = sources\n  .filter(s => citedNumbers.has(s.n))\n  .map(s => ({ n: s.n, title: s.title, url: s.url, domain: s.domain }));\n\n// Nettoyage du texte destiné au client\nlet reply = rawReply\n  .replace(/\\s*\\[\\d+(?:\\s*,\\s*\\d+)*\\]/g, '')          // citations [n]\n  .replace(/\\s*\\(\\s*https?:\\/\\/[^\\s)]*\\s*\\)/g, '')    // URL entre parenthèses\n  .replace(/https?:\\/\\/[^\\s)]+/g, '')                 // URL éventuelles\n  .replace(/\\*\\*|__|#/g, '');                          // Markdown\n\n// Filet de sécurité : noms de sites concurrents\nconst SITE_NAMES = /\\b(yakeey|agenz|mubawab|sarouty|avito)(\\.(ma|com))?\\b/gi;\nconst siteNameLeak = SITE_NAMES.test(reply);\nreply = reply.replace(SITE_NAMES, 'un référentiel de prix');\n\nreply = reply.replace(/[ \\t]+([.,;:!?])/g, '$1').replace(/[ \\t]{2,}/g, ' ').trim();\n\nif (!reply) {\n  const FALLBACK = {\n    darija_latin: \"Sm7 lina, ma9dernach njawbo 3la had s-su2al daba. 3awed jarreb mn b3d.\",\n    en: \"Sorry, I can't answer this market question right now. Please try again later.\"\n  };\n  reply = FALLBACK[prep.langue] || \"Désolé, je ne peux pas répondre à cette question sur le marché pour le moment. Veuillez réessayer plus tard.\";\n}\n\nreturn [{\n  json: {\n    reply,\n    session_id: prep.session_id,\n    recommended_annonce_ids: [],\n    intent: \"market_advice\",\n    metadata: {\n      agent_used: \"market_advice_agent\",\n      tool_calls_count: 1,\n      llm_calls_count: 2,\n      search_query: prep.search_query,\n      query_rewritten: prep.query_rewritten,\n      langue: prep.langue,\n      sources_count: sources.length,\n      cited_sources_count: citedSources.length,\n      cited_sources: citedSources,\n      site_name_leak: siteNameLeak,\n      rewrite_error: prep.rewrite_error,\n      tavily_error: prep.tavily_error,\n      gemini_error: geminiError\n    }\n  }\n}];\n"
+      },
+      "id": "20a5412d-2cc5-48ef-82ba-80bc7e3ceb1b",
+      "name": "Construire réponse finale",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4208,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "0e540a4e-9ec4-4d04-96fb-ec32ae837d45",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        4448,
+        976
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Préparer recherche",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Préparer recherche",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer recherche": {
+      "main": [
+        [
+          {
+            "node": "Reformuler requête",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reformuler requête": {
+      "main": [
+        [
+          {
+            "node": "Préparer Tavily",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer Tavily": {
+      "main": [
+        [
+          {
+            "node": "Tavily Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily Search": {
+      "main": [
+        [
+          {
+            "node": "Construire prompt marché",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construire prompt marché": {
+      "main": [
+        [
+          {
+            "node": "Gemini synthèse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini synthèse": {
+      "main": [
+        [
+          {
+            "node": "Construire réponse finale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construire réponse finale": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "38107234-37f0-476a-be10-cf60ac70ba88",
+  "meta": {
+    "instanceId": "310f76547641023b1ea227a9c38448488011e305263742c6c74f434e8ce90bb1"
+  },
+  "nodeGroups": [],
+  "id": "ZonYIyptlojpf9uP",
+  "tags": []
+}

@@ -62,6 +62,7 @@ class AIChatView(APIView):
                 session_id=session_id,
                 user_context=user_context,
                 conversation_history=history,
+                auth_token=self._extract_token(request),
             )
         except N8NClientError as exc:
             logger.error("Échec de l'appel N8N : %s", exc)
@@ -110,6 +111,19 @@ class AIChatView(APIView):
         return Response(
             AIChatResponseSerializer(response_data, context={"request": request}).data
         )
+
+    def _extract_token(self, request) -> str:
+        """
+        Jeton JWT de l'utilisateur connecté, transmis à l'orchestrateur pour que
+        les sous-agents appellent l'API Django AU NOM de cet utilisateur.
+        Visiteur anonyme -> chaîne vide : les actions protégées seront refusées.
+        """
+        if not request.user.is_authenticated:
+            return ""
+        header = request.META.get("HTTP_AUTHORIZATION", "")
+        if header.lower().startswith("bearer "):
+            return header[7:].strip()
+        return ""
 
     def _build_user_context(self, request) -> dict:
         context = {"is_authenticated": request.user.is_authenticated}

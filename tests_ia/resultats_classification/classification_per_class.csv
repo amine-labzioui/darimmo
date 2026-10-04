@@ -1,0 +1,13 @@
+﻿Intention,Précision,Rappel,F1-score,Support
+search_property,1.000,1.000,1.000,7
+create_listing,1.000,1.000,1.000,7
+update_listing,1.000,1.000,1.000,7
+delete_listing,1.000,1.000,1.000,7
+my_listings,1.000,1.000,1.000,7
+payment_status,1.000,1.000,1.000,7
+contact_owner,1.000,1.000,1.000,7
+account_help,1.000,1.000,1.000,7
+general_help,1.000,1.000,1.000,7
+unknown,1.000,1.000,1.000,7
+macro avg,1.000,1.000,1.000,70
+weighted avg,1.000,1.000,1.000,70
