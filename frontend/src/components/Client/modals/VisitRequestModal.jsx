@@ -29,7 +29,7 @@ export default function VisitRequestModal({
       await clientService.createVisitRequest({
         annonce: annonce.id,
         requested_date: new Date(date).toISOString(),
-        message,
+        client_message: message,
       });
 
       pushToast({
@@ -61,7 +61,7 @@ export default function VisitRequestModal({
       onClose={onClose}
       title="Demander une visite"
     >
-      <label className="block mb-2 font-medium">
+      <label className="block mb-1.5 text-sm font-medium">
         Date souhaitée
       </label>
 
@@ -71,16 +71,18 @@ export default function VisitRequestModal({
         onChange={(e) => setDate(e.target.value)}
         className="
           w-full
-          rounded-2xl
+          rounded-lg
           border
           border-[#E6DFD0]
-          p-3
+          px-3
+          py-2
+          text-sm
           outline-none
           focus:border-[#047857]
         "
       />
 
-      <label className="block mt-6 mb-2 font-medium">
+      <label className="block mt-4 mb-1.5 text-sm font-medium">
         Message
       </label>
 
@@ -90,10 +92,12 @@ export default function VisitRequestModal({
         onChange={(e) => setMessage(e.target.value)}
         className="
           w-full
-          rounded-2xl
+          rounded-lg
           border
           border-[#E6DFD0]
-          p-3
+          px-3
+          py-2
+          text-sm
           resize-none
           outline-none
           focus:border-[#047857]
@@ -104,11 +108,12 @@ export default function VisitRequestModal({
         onClick={handleSubmit}
         disabled={loading}
         className="
-          mt-6
+          mt-4
           w-full
-          rounded-2xl
+          rounded-lg
           bg-[#047857]
-          py-4
+          py-2
+          text-sm
           text-white
           font-semibold
           hover:bg-[#03664F]

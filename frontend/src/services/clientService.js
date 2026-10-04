@@ -49,17 +49,6 @@ export const clientService = {
     return data;
   },
 
-  async getVisitRequests() {
-    const { data } = await api.get(
-    "/client-dashboard/visit-requests/?role=client"
-    );
-
-  console.log(data);
-
-  return data;
-  },
-
-
   // ===== Recherches sauvegardées =====
   async getSavedSearches() {
     const { data } = await api.get("/client-dashboard/saved-searches/");

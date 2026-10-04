@@ -1,5 +1,5 @@
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
-import { CITIES, PROPERTY_TYPES, TRANSACTION_TYPES } from "../../utils/constants";
+import { CITY_OPTIONS, PROPERTY_TYPES, TRANSACTION_TYPES } from "../../utils/constants";
 
 export default function FilterPanel({ filters, onChange, onReset, resultsCount }) {
   function update(field, value) {
@@ -46,7 +46,8 @@ export default function FilterPanel({ filters, onChange, onReset, resultsCount }
           <SelectInput
             value={filters.city}
             onChange={(v) => update("city", v)}
-            options={CITIES}
+            options={CITY_OPTIONS.map((c) => c.value)}
+            labels={Object.fromEntries(CITY_OPTIONS.map((c) => [c.value, c.label]))}
             placeholder="Toutes les villes"
           />
         </Field>

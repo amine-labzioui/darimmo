@@ -42,10 +42,7 @@ class ClientDashboardSummaryView(APIView):
                 status=VisitRequest.Status.PENDING,
             ).count(),
             "saved_searches_count": SavedSearch.objects.filter(user=user).count(),
-            "unread_messages_count": Message.objects.filter(
-                recipient=user,
-                is_read=False,
-            ).count(),
+            "unread_messages_count": Message.objects.filter(recipient=user).count(),
         }
 
         return Response(ClientDashboardSummarySerializer(data).data)

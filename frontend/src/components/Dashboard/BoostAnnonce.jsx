@@ -1,26 +1,30 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { paymentService } from "../../services/paymentService";
+import { annonceService } from "../../services/annonceService";
+import { getBoostUnavailableMessage, isBoostActive } from "../../utils/helpers";
+import { formatDate } from "../../utils/formatters";
 import LoadingSpinner from "../Shared/LoadingSpinner";
-console.log("BoostAnnonce file loaded");
 
 export default function BoostAnnonce() {
-  console.log("BoostAnnonce mounted");
   const { id } = useParams();
 
   const [plans, setPlans] = useState([]);
+  const [annonce, setAnnonce] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    paymentService
-  .getBoostPlans()
-  .then((data) => {
-    console.log(data.results);
-    setPlans(data.results);
-  })
-  .finally(() => setLoading(false));
-   
-  }, []);
+    Promise.all([
+      paymentService.getBoostPlans().then((data) => {
+        setPlans(data.results);
+      }),
+      // Sert à savoir si un boost est déjà actif sur cette annonce.
+      annonceService
+        .getById(id)
+        .then(setAnnonce)
+        .catch(() => setAnnonce(null)),
+    ]).finally(() => setLoading(false));
+  }, [id]);
 
   async function buy(planId) {
     try {
@@ -32,8 +36,8 @@ export default function BoostAnnonce() {
 
       window.location.href = data.checkout_url;
     } catch (err) {
-  console.log(err.response?.data);
-  console.log(err);
+  console.error(err.response?.data);
+  console.error(err);
   alert("Impossible de lancer le paiement.");
 }
 }
@@ -41,13 +45,14 @@ export default function BoostAnnonce() {
 
   if (loading)
     return <LoadingSpinner fullPage />;
-  console.log(Array.isArray(plans), plans);
+
+  const unavailableMessage = getBoostUnavailableMessage(annonce);
 
   return (
     <div className="max-w-5xl mx-auto">
 
       <h1
-        className="text-3xl mb-8"
+        className="text-2xl mb-6"
         style={{
           fontFamily:"Fraunces",
           fontWeight:600
@@ -57,41 +62,58 @@ export default function BoostAnnonce() {
       </h1>
 
 
-      <div className="grid md:grid-cols-3 gap-6">
+      {unavailableMessage ? (
+        <div className="rounded-lg bg-[#F7F4EE] border border-[#E6DFD0] p-3 text-sm text-[#5C6961]">
+          {unavailableMessage}
+        </div>
+      ) : isBoostActive(annonce) ? (
+        <div className="rounded-xl bg-[#ECFDF5] border border-[#A7F3D0] p-4">
+          <div className="font-semibold text-[#047857]">
+            {annonce.boosted_until
+              ? `Boost actif jusqu'au ${formatDate(annonce.boosted_until)}.`
+              : "Boost actif."}
+          </div>
+
+          {annonce.boosted_until && (
+            <div className="text-sm mt-1 text-[#065F46]">
+              Vous pourrez booster à nouveau après cette date.
+            </div>
+          )}
+        </div>
+      ) : (
+      <div className="grid md:grid-cols-3 gap-4">
 
   {plans.map((plan) => {
-    console.log("PLAN =>", plan);
-
     return (
       <div
   key={plan.id}
-  className="rounded-3xl border border-stone-200 bg-white p-8 shadow-lg"
+  className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm"
 >
-  <h2 className="text-2xl font-semibold text-gray-900">
+  <h2 className="text-lg font-semibold text-gray-900">
     {plan.name}
   </h2>
 
-  <p className="mt-3 text-gray-600">
+  <p className="mt-1.5 text-sm text-gray-600">
     {plan.description}
   </p>
 
-  <div className="mt-8">
-    <span className="text-4xl font-bold text-emerald-700">
+  <div className="mt-4">
+    <span className="text-2xl font-bold text-emerald-700">
       {plan.price}
     </span>
 
-    <span className="ml-2 text-gray-600">
+    <span className="ml-1.5 text-sm text-gray-600">
       MAD
     </span>
   </div>
 
-  <div className="mt-3 text-sm text-gray-600">
+  <div className="mt-1 text-sm text-gray-600">
     {plan.duration_days} jours
   </div>
 
   <button
     onClick={() => buy(plan.id)}
-    className="mt-8 w-full rounded-xl bg-emerald-700 py-3 text-white hover:bg-emerald-800"
+    className="mt-5 w-full rounded-lg bg-emerald-700 py-2 text-sm text-white hover:bg-emerald-800"
   >
     Choisir
   </button>
@@ -99,6 +121,7 @@ export default function BoostAnnonce() {
   );
 })}
       </div>
+      )}
     </div>
   );
 }

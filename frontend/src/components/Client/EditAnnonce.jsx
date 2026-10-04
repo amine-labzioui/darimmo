@@ -5,7 +5,8 @@ import { useForm } from "../../hooks/useForm";
 import { validateAnnonceForm } from "../../utils/validators";
 import { annonceService } from "../../services/annonceService";
 import { useNotification } from "../../hooks/useNotification";
-import { CITIES, PROPERTY_TYPES, TRANSACTION_TYPES, ANNONCE_STATUS } from "../../utils/constants";
+import { useAuth } from "../../hooks/useAuth";
+import { CITY_OPTIONS, normalizeCity, PROPERTY_TYPES, TRANSACTION_TYPES, ANNONCE_STATUS } from "../../utils/constants";
 import MapPicker from "../Shared/MapPicker";
 import LoadingSpinner from "../Shared/LoadingSpinner";
 import { paymentService } from "../../services/paymentService";
@@ -15,6 +16,8 @@ export default function EditAnnonce() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { pushToast } = useNotification();
+  const { isAgence } = useAuth();
+  const dashboardBase = isAgence ? "/agence" : "/client";
 
   const [annonce, setAnnonce] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -102,6 +105,10 @@ export default function EditAnnonce() {
 
     const address = data.address || {};
 
+    // La ville renvoyée par la carte n'est acceptée que si elle fait partie de la liste.
+    const mapCity = normalizeCity(address.city || address.town || address.village);
+    const isListedCity = CITY_OPTIONS.some((c) => c.value === mapCity);
+
     setValues((prev) => ({
       ...prev,
 
@@ -110,11 +117,7 @@ export default function EditAnnonce() {
 
       address: data.display_name || "",
 
-      city:
-        address.city ||
-        address.town ||
-        address.village ||
-        prev.city,
+      city: isListedCity ? mapCity : prev.city,
 
       neighborhood:
         address.suburb ||
@@ -157,33 +160,15 @@ export default function EditAnnonce() {
       pushToast({ type: "error", title: "Impossible de publier l'annonce" });
     }
   }
-  async function handleBoost(planId, provider = "stripe") {
+  async function handleBoost(planId) {
   try {
     const data = await paymentService.createCheckout({
-      annonce_id: id,
-      boost_plan_id: planId,
-      provider,
+      annonceId: id,
+      boostPlanId: planId,
+      provider: "cmi",
     });
 
-    if (provider === "stripe") {
-      window.location.href = data.checkout_url;
-      return;
-    }
-
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = data.action_url;
-
-    Object.entries(data.fields).forEach(([key, value]) => {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = key;
-      input.value = value;
-      form.appendChild(input);
-    });
-
-    document.body.appendChild(form);
-    form.submit();
+    window.location.href = data.checkout_url;
 
   } catch (err) {
     console.error(err);
@@ -199,7 +184,7 @@ export default function EditAnnonce() {
     try {
       await annonceService.remove(id);
       pushToast({ type: "success", title: "Annonce supprimée" });
-      navigate("/tableau-de-bord/annonces");
+      navigate(`${dashboardBase}/annonces`);
     } catch {
       pushToast({ type: "error", title: "Impossible de supprimer l'annonce" });
     }
@@ -219,7 +204,7 @@ export default function EditAnnonce() {
         >
           Modifier l'annonce
         </h1>
-        <span className={`px-3 py-1 rounded-full text-[12.5px] font-medium bg-${statusInfo?.color}-100 text-${statusInfo?.color}-700`}>
+        <span className={`px-3 py-1 rounded-full text-[12.5px] font-medium ${statusInfo?.badgeClass || ""}`}>
           {statusInfo?.label}
         </span>
       </div>

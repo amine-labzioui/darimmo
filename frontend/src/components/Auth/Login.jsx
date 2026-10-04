@@ -34,23 +34,23 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-5 py-12">
+    <div className="min-h-[80vh] flex items-center justify-center px-5 py-10">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1
             className="text-2xl text-[#1C2520]"
             style={{ fontFamily: "'Fraunces', serif", fontWeight: 600 }}
           >
             Bon retour parmi nous
           </h1>
-          <p className="text-[#5C6961] text-sm mt-2">
+          <p className="text-[#5C6961] text-sm mt-1">
             Connectez-vous pour accéder à votre espace DarImmo
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E6DFD0] p-7 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-[#E6DFD0] p-5 space-y-4">
           {error && (
-            <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+            <div className="px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
               {error}
             </div>
           )}
@@ -60,14 +60,14 @@ export default function Login() {
               Adresse e-mail
             </label>
             <div className="relative">
-              <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9189]" />
+              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8C9189]" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="vous@exemple.com"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E6DFD0] text-[14.5px] outline-none focus:border-[#047857]"
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#E6DFD0] text-sm outline-none focus:border-[#047857]"
               />
             </div>
           </div>
@@ -77,42 +77,36 @@ export default function Login() {
               Mot de passe
             </label>
             <div className="relative">
-              <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C9189]" />
+              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8C9189]" />
               <input
                 type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-[#E6DFD0] text-[14.5px] outline-none focus:border-[#047857]"
+                className="w-full pl-9 pr-9 py-2 rounded-lg border border-[#E6DFD0] text-sm outline-none focus:border-[#047857]"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8C9189]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C9189]"
               >
-                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Link to="/mot-de-passe-oublie" className="text-[13px] text-[#047857] hover:underline">
-              Mot de passe oublié ?
-            </Link>
           </div>
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#047857] text-white text-[14.5px] font-medium hover:bg-[#035f46] transition-colors disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#047857] text-white text-sm font-medium hover:bg-[#035f46] transition-colors disabled:opacity-60"
           >
-            <LogIn size={17} />
+            <LogIn size={16} />
             {submitting ? "Connexion…" : "Se connecter"}
           </button>
         </form>
 
-        <p className="text-center text-[14px] text-[#5C6961] mt-6">
+        <p className="text-center text-sm text-[#5C6961] mt-5">
           Pas encore de compte ?{" "}
           <Link to="/inscription" className="text-[#047857] font-medium hover:underline">
             Créer un compte

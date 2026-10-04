@@ -5,11 +5,14 @@ import { useForm } from "../../hooks/useForm";
 import { validateAnnonceForm } from "../../utils/validators";
 import { annonceService } from "../../services/annonceService";
 import { useNotification } from "../../hooks/useNotification";
-import { CITIES, PROPERTY_TYPES, TRANSACTION_TYPES } from "../../utils/constants";
+import { useAuth } from "../../hooks/useAuth";
+import { CITY_OPTIONS, PROPERTY_TYPES, TRANSACTION_TYPES } from "../../utils/constants";
 
 export default function CreateAnnonce() {
   const navigate = useNavigate();
   const { pushToast } = useNotification();
+  const { isAgence } = useAuth();
+  const dashboardBase = isAgence ? "/agence" : "/client";
   const [images, setImages] = useState([]);
   const [serverError, setServerError] = useState("");
 
@@ -42,7 +45,7 @@ export default function CreateAnnonce() {
     try {
       const annonce = await annonceService.create(formData);
       pushToast({ type: "success", title: "Annonce créée avec succès" });
-      navigate(`/tableau-de-bord/annonces/${annonce.id}/modifier`);
+      navigate(`${dashboardBase}/annonces/${annonce.id}/modifier`);
     } catch (err) {
       console.error("Détail de l'erreur backend:", err.response?.data);
       setServerError(
@@ -94,7 +97,7 @@ export default function CreateAnnonce() {
             <Field label="Ville" error={errors.city}>
               <select name="city" value={values.city} onChange={handleChange} className="w-full px-3.5 py-2.5 rounded-xl border border-[#E6DFD0] text-[14.5px] outline-none focus:border-[#047857] bg-white">
                 <option value="">Sélectionner</option>
-                {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                {CITY_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </Field>
             <Field label="Quartier">

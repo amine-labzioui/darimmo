@@ -104,9 +104,6 @@ export default function AgencyVisitRequests() {
   );
   };
   const contactClient = async (req) => {
-  console.log("REQUEST =", req);
-  console.log("Annonce ID =", req.annonce);
-
   try {
     const { data } = await api.post(
       "/messaging/conversations/contacter/",
@@ -127,21 +124,21 @@ export default function AgencyVisitRequests() {
     (r) => r.status === "pending"
   ).length;
 
-  const approved = requests.filter(
-    (r) => r.status === "approved"
+  const accepted = requests.filter(
+    (r) => r.status === "accepted"
   ).length;
 
-  const rejected = requests.filter(
-    (r) => r.status === "rejected"
+  const refused = requests.filter(
+    (r) => r.status === "refused"
   ).length;
 
   return (
     <div className="max-w-7xl mx-auto">
 
-      <div className="mb-10">
+      <div className="mb-6">
 
         <h1
-          className="text-4xl text-[#1C2520]"
+          className="text-2xl text-[#1C2520]"
           style={{
             fontFamily: "'Fraunces', serif",
             fontWeight: 600,
@@ -150,22 +147,22 @@ export default function AgencyVisitRequests() {
           Demandes de visite
         </h1>
 
-        <p className="text-[#6C746E] mt-2">
+        <p className="text-[#6C746E] text-sm mt-1">
           Consultez et gérez les rendez-vous demandés par vos clients.
         </p>
 
       </div>
 
-      <div className="grid grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-4 gap-4 mb-6">
 
-        <div className="bg-white border border-[#ECE6DA] rounded-2xl px-6 py-5">
+        <div className="bg-white border border-[#ECE6DA] rounded-xl p-4">
 
-          <p className="text-sm text-[#8B938D]">
+          <p className="text-xs text-[#8B938D]">
             Total
           </p>
 
           <h2
-            className="text-3xl mt-2 text-[#1C2520]"
+            className="text-2xl mt-1 text-[#1C2520]"
             style={{
               fontFamily: "'Fraunces', serif",
             }}
@@ -175,14 +172,14 @@ export default function AgencyVisitRequests() {
 
         </div>
 
-        <div className="bg-white border border-[#ECE6DA] rounded-2xl px-6 py-5">
+        <div className="bg-white border border-[#ECE6DA] rounded-xl p-4">
 
-          <p className="text-sm text-[#8B938D]">
+          <p className="text-xs text-[#8B938D]">
             En attente
           </p>
 
           <h2
-            className="text-3xl mt-2 text-[#C57A2D]"
+            className="text-2xl mt-1 text-[#C57A2D]"
             style={{
               fontFamily: "'Fraunces', serif",
             }}
@@ -192,58 +189,58 @@ export default function AgencyVisitRequests() {
 
         </div>
 
-        <div className="bg-white border border-[#ECE6DA] rounded-2xl px-6 py-5">
+        <div className="bg-white border border-[#ECE6DA] rounded-xl p-4">
 
-          <p className="text-sm text-[#8B938D]">
+          <p className="text-xs text-[#8B938D]">
             Confirmées
           </p>
 
           <h2
-            className="text-3xl mt-2 text-[#047857]"
+            className="text-2xl mt-1 text-[#047857]"
             style={{
               fontFamily: "'Fraunces', serif",
             }}
           >
-            {approved}
+            {accepted}
           </h2>
 
         </div>
 
-        <div className="bg-white border border-[#ECE6DA] rounded-2xl px-6 py-5">
+        <div className="bg-white border border-[#ECE6DA] rounded-xl p-4">
 
-          <p className="text-sm text-[#8B938D]">
+          <p className="text-xs text-[#8B938D]">
             Refusées
           </p>
 
           <h2
-            className="text-3xl mt-2 text-[#B84B4B]"
+            className="text-2xl mt-1 text-[#B84B4B]"
             style={{
               fontFamily: "'Fraunces', serif",
             }}
           >
-            {rejected}
+            {refused}
           </h2>
 
         </div>
 
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {requests.map((req) => (
 
   <div
     key={req.id}
-    className="bg-white border border-[#ECE6DA] rounded-2xl px-7 py-5 hover:border-[#D7CEBF] transition-all duration-300"
+    className="bg-white border border-[#ECE6DA] rounded-xl p-4 hover:border-[#D7CEBF] transition-all duration-300"
   >
 
-    <div className="flex items-start justify-between gap-6">
+    <div className="flex items-start justify-between gap-4">
 
       <div className="flex-1 min-w-0">
 
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
 
           <h2
-            className="text-[20px] text-[#1C2520] truncate"
+            className="text-base text-[#1C2520] truncate"
             style={{
               fontFamily: "'Fraunces', serif",
               fontWeight: 600,
@@ -253,11 +250,11 @@ export default function AgencyVisitRequests() {
           </h2>
 
           <span
-            className={`px-3 py-1 rounded-full text-xs font-medium
+            className={`px-2.5 py-1 rounded-full text-xs font-medium
             ${
-              req.status === "approved"
+              req.status === "accepted"
                 ? "bg-[#EDF8F3] text-[#047857]"
-                : req.status === "rejected"
+                : req.status === "refused"
                 ? "bg-[#FDEEEE] text-[#B84B4B]"
                 : "bg-[#FFF7EC] text-[#C57A2D]"
             }`}
@@ -345,19 +342,19 @@ export default function AgencyVisitRequests() {
 
       </div>
 
-      <div className="flex flex-col gap-2 w-[165px]">
+      <div className="flex flex-col gap-2 w-[150px]">
         {req.status === "pending" ? (
   <>
     <button
       onClick={() => updateStatus(req.id, "accepted")}
-      className="h-10 rounded-xl bg-[#EEF8F2] text-[#047857] text-sm font-medium hover:bg-[#DFF3E8] transition-all"
+      className="h-9 rounded-lg bg-[#EEF8F2] text-[#047857] text-sm font-medium hover:bg-[#DFF3E8] transition-all"
     >
       Accepter
     </button>
 
     <button
       onClick={() => updateStatus(req.id, "refused")}
-      className="h-10 rounded-xl bg-[#FDF1F1] text-[#B84B4B] text-sm font-medium hover:bg-[#F9E5E5] transition-all"
+      className="h-9 rounded-lg bg-[#FDF1F1] text-[#B84B4B] text-sm font-medium hover:bg-[#F9E5E5] transition-all"
     >
       Refuser
     </button>
@@ -365,7 +362,7 @@ export default function AgencyVisitRequests() {
 ) : (
   <button
     onClick={() => updateStatus(req.id, "pending")}
-    className="h-10 rounded-xl bg-[#F7F4EE] text-[#6C746E] text-sm font-medium hover:bg-[#EFE8DC] transition-all"
+    className="h-9 rounded-lg bg-[#F7F4EE] text-[#6C746E] text-sm font-medium hover:bg-[#EFE8DC] transition-all"
   >
     Réouvrir
   </button>
@@ -381,21 +378,21 @@ export default function AgencyVisitRequests() {
     );
     setModalOpen(true);
   }}
-  className="h-10 rounded-xl border border-[#E7DFD2] text-[#5C6961] text-sm hover:bg-[#FAF8F4] transition-all"
+  className="h-9 rounded-lg border border-[#E7DFD2] text-[#5C6961] text-sm hover:bg-[#FAF8F4] transition-all"
 >
   Reprogrammer
 </button>
 
 <button
   onClick={() => contactClient(req)}
-  className="h-10 rounded-xl border border-[#E7DFD2] text-[#5C6961] text-sm hover:bg-[#FAF8F4] transition-all"
+  className="h-9 rounded-lg border border-[#E7DFD2] text-[#5C6961] text-sm hover:bg-[#FAF8F4] transition-all"
 >
   Contacter
 </button>
 
 <button
   onClick={() => navigate(`/annonces/${req.annonce}`)}
-  className="h-10 rounded-xl border border-[#E7DFD2] text-[#5C6961] text-sm hover:bg-[#FAF8F4] transition-all"
+  className="h-9 rounded-lg border border-[#E7DFD2] text-[#5C6961] text-sm hover:bg-[#FAF8F4] transition-all"
 >
   Voir l'annonce
 </button>
@@ -403,10 +400,10 @@ export default function AgencyVisitRequests() {
 {modalOpen && (
   <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
 
-    <div className="bg-white rounded-2xl w-[420px] p-7">
+    <div className="bg-white rounded-xl w-[420px] p-5">
 
       <h2
-        className="text-xl mb-6"
+        className="text-lg mb-4"
         style={{
           fontFamily: "'Fraunces', serif",
           fontWeight: 600,
@@ -423,7 +420,7 @@ export default function AgencyVisitRequests() {
         type="datetime-local"
         value={newDate}
         onChange={(e) => setNewDate(e.target.value)}
-        className="w-full border border-[#E5DED2] rounded-xl px-4 h-11 mb-6 outline-none"
+        className="w-full border border-[#E5DED2] rounded-lg px-3 h-10 mb-4 text-sm outline-none"
       />
 
       <div className="flex justify-end gap-3">
@@ -433,14 +430,14 @@ export default function AgencyVisitRequests() {
             setModalOpen(false);
             setSelectedRequest(null);
           }}
-          className="px-5 h-10 border border-[#E5DED2] rounded-xl"
+          className="px-4 h-9 text-sm border border-[#E5DED2] rounded-lg"
         >
           Annuler
         </button>
 
         <button
           onClick={confirmReschedule}
-          className="px-5 h-10 rounded-xl bg-[#F7F4EE] border border-[#E5DED2]"
+          className="px-4 h-9 text-sm rounded-lg bg-[#F7F4EE] border border-[#E5DED2]"
         >
           Enregistrer
         </button>

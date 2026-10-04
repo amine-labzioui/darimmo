@@ -12,15 +12,11 @@ export const authService = {
   },
 
 async login(email, password) {
-  console.log("LOGIN START");
-
   try {
     const response = await api.post("/users/login/", {
       email,
       password,
     });
-
-    console.log("LOGIN SUCCESS", response);
 
     persistSession(response.data);
 
@@ -36,6 +32,8 @@ async login(email, password) {
     const refresh = localStorage.getItem("darimmo_refresh_token");
     try {
       if (refresh) await api.post("/users/logout/", { refresh });
+    } catch {
+      // L'échec de l'appel serveur ne doit pas bloquer la déconnexion locale.
     } finally {
       clearAuthStorage();
     }

@@ -23,17 +23,17 @@ export default function SimilarPropertyCard({
       className="
         group
         overflow-hidden
-        rounded-[30px]
+        rounded-xl
         bg-white
         border
         border-[#ECE7DD]
         shadow-sm
-        hover:shadow-2xl
+        hover:shadow-md
         transition-all
         duration-500
       "
     >
-      <div className="overflow-hidden h-64">
+      <div className="overflow-hidden h-44">
 
         <img
           src={getMainImageUrl(annonce)}
@@ -50,43 +50,43 @@ export default function SimilarPropertyCard({
 
       </div>
 
-      <div className="p-6">
+      <div className="p-4">
 
         <div className="flex items-center gap-2 text-[#6B7280] text-sm">
 
-          <MapPin size={15} />
+          <MapPin size={14} />
 
           {annonce.city}
 
         </div>
 
-        <h3 className="mt-3 text-xl font-bold text-[#1C2520] line-clamp-2">
+        <h3 className="mt-1.5 text-base font-semibold text-[#1C2520] line-clamp-2">
 
           {annonce.title}
 
         </h3>
 
-        <div className="mt-5 flex items-center gap-5 text-[#6B7280]">
+        <div className="mt-2 flex items-center gap-4 text-sm text-[#6B7280]">
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
 
-            <Bed size={18} />
+            <Bed size={14} />
 
             {annonce.bedrooms}
 
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
 
-            <Bath size={18} />
+            <Bath size={14} />
 
             {annonce.bathrooms}
 
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
 
-            <Maximize size={18} />
+            <Maximize size={14} />
 
             {annonce.surface} m²
 
@@ -94,7 +94,7 @@ export default function SimilarPropertyCard({
 
         </div>
 
-        <div className="mt-6 text-3xl font-bold text-[#047857]">
+        <div className="mt-3 text-lg font-semibold text-[#047857]">
 
           {formatPriceWithCurrency(
             annonce.price,

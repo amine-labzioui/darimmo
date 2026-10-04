@@ -4,12 +4,29 @@ import { Send, Sparkles, MapPin, Bed, Maximize } from "lucide-react";
 import { aiService } from "../../services/analyticsService";
 import { getOrCreateSessionId } from "../../utils/helpers";
 import { formatPriceWithCurrency } from "../../utils/formatters";
+import MarkdownText from "./MarkdownText";
 
 const WELCOME_MESSAGE = {
   sender: "ai",
   content:
     "Bonjour 👋 Je suis l'Assistant DarImmo. Je peux vous aider à trouver un bien selon votre budget et vos critères, ou répondre à vos questions sur le marché immobilier marocain. Comment puis-je vous aider ?",
 };
+
+// L'agent n8n ajoute « Lien : <url>/annonces/<id> » à la fin de ses réponses.
+// La ligne est retirée seulement si une carte de recommandation existe pour cette annonce.
+const ANNONCE_LINK_LINE = /^\s*Lien\s*:\s*https?:\/\/[^\s/]+\/annonces\/(\d+)\/?\s*$/;
+
+function hideRecommendedLinks(content, recommendations = []) {
+  const cardIds = new Set(recommendations.map((rec) => String(rec.annonce)));
+  if (!cardIds.size) return content;
+  return String(content ?? "")
+    .split(/\r?\n/)
+    .filter((line) => {
+      const match = line.match(ANNONCE_LINK_LINE);
+      return !(match && cardIds.has(match[1]));
+    })
+    .join("\n");
+}
 
 export default function AIAssistant() {
   const [sessionId] = useState(getOrCreateSessionId);
@@ -85,7 +102,9 @@ export default function AIAssistant() {
                       : "bg-[#F0EAD8] text-[#1C2520] rounded-bl-sm"
                   }`}
                 >
-                  {msg.content}
+                  {msg.sender === "user" ? msg.content : (
+                    <MarkdownText text={hideRecommendedLinks(msg.content, msg.recommendations)} />
+                  )}
                 </div>
 
                 {msg.recommendations?.length > 0 && (

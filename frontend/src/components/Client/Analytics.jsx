@@ -5,7 +5,6 @@ import {
   MessageSquare,
   Home,
   Trophy,
-  TrendingUp,
   BarChart3,
 } from "lucide-react";
 
@@ -126,11 +125,11 @@ export default function Analytics() {
     );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
 
       <div>
         <h1
-          className="text-3xl text-[#1C2520]"
+          className="text-2xl text-[#1C2520]"
           style={{
             fontFamily: "'Fraunces', serif",
             fontWeight: 600,
@@ -139,83 +138,58 @@ export default function Analytics() {
           Tableau de bord
         </h1>
 
-        <p className="text-[#5C6961] mt-2">
+        <p className="text-[#5C6961] text-sm mt-1">
           Visualisez les performances de toutes vos annonces.
         </p>
       </div>
 
-      <div className="grid xl:grid-cols-4 md:grid-cols-2 gap-5">
+      <div className="grid xl:grid-cols-4 md:grid-cols-2 gap-4">
 
         <StatCard
           icon={Eye}
-          title="Vues"
+          label="Vues"
           value={totals.views}
-          color="emerald"
+          color="#047857"
         />
 
         <StatCard
           icon={Heart}
-          title="Favoris"
+          label="Favoris"
           value={totals.favorites}
-          color="orange"
+          color="#DC2626"
         />
 
         <StatCard
           icon={MessageSquare}
-          title="Messages"
+          label="Conversations"
           value={totals.messages}
-          color="blue"
+          color="#2563EB"
         />
 
         <StatCard
           icon={Home}
-          title="Annonces"
+          label="Annonces"
           value={stats.length}
-          color="violet"
+          color="#7C3AED"
         />
 
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-      <StatCard
-        icon={Eye}
-        label="Vues"
-        value={totals.views}
-        color="#047857"
-      />
-
-      <StatCard
-        icon={MessageSquare}
-        label="Messages"
-        value={totals.messages}
-        color="#2563EB"
-      />
-
-      <StatCard
-        icon={Heart}
-        label="Favoris"
-        value={totals.favorites}
-        color="#DC2626"
-      />
-
-    </div>
-
     {/* Graph */}
-    <div className="bg-white rounded-3xl shadow-sm border border-[#ECE7DB] p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-[#ECE7DB] p-5">
 
-      <h2 className="text-lg font-semibold text-[#1C2520] mb-5">
+      <h2 className="text-lg font-semibold text-[#1C2520] mb-4">
         Nombre de vues par annonce
       </h2>
 
       <ResponsiveContainer
         width="100%"
-        height={360}
+        height={280}
       >
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
 
-          <XAxis dataKey="name" />
+          <XAxis dataKey="short" />
 
           <YAxis />
 
@@ -232,33 +206,33 @@ export default function Analytics() {
     </div>
 
     {/* Tableau */}
-    <div className="bg-white rounded-3xl shadow-sm border border-[#ECE7DB] overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-[#ECE7DB] overflow-hidden">
 
-      <div className="px-6 py-5 border-b">
+      <div className="px-5 py-3.5 border-b">
         <h2 className="font-semibold text-lg">
           Détail des annonces
         </h2>
       </div>
 
-      <table className="w-full">
+      <table className="w-full text-sm">
 
         <thead className="bg-[#F8F7F3]">
 
           <tr className="text-left">
 
-            <th className="px-6 py-4">
+            <th className="px-5 py-2.5">
               Annonce
             </th>
 
-            <th className="px-6 py-4">
+            <th className="px-5 py-2.5">
               Vues
             </th>
 
-            <th className="px-6 py-4">
-              Messages
+            <th className="px-5 py-2.5">
+              Conversations
             </th>
 
-            <th className="px-6 py-4">
+            <th className="px-5 py-2.5">
               Favoris
             </th>
 
@@ -275,13 +249,13 @@ export default function Analytics() {
               className="border-t hover:bg-[#FAFAF8]"
             >
 
-              <td className="px-6 py-5 font-medium">
+              <td className="px-5 py-3 font-medium">
                 {item.title}
               </td>
 
-              <td className="px-6 py-5">
+              <td className="px-5 py-3">
 
-              <span className="inline-flex px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+              <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700 font-semibold">
 
               👁{item.total_views}
 
@@ -289,9 +263,9 @@ export default function Analytics() {
 
               </td>
 
-              <td className="px-6 py-5">
+              <td className="px-5 py-3">
 
-              <span className="inline-flex px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold">
+              <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 font-semibold">
  
               💬 {item.messages_count}
 
@@ -299,9 +273,9 @@ export default function Analytics() {
 
               </td>
 
-              <td className="px-6 py-5">
+              <td className="px-5 py-3">
 
-              <span className="inline-flex px-3 py-1 rounded-full bg-red-100 text-red-600 font-semibold">
+              <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs bg-red-100 text-red-600 font-semibold">
 
               ❤️ {item.favorites_count}
 
@@ -329,20 +303,20 @@ function StatCard({ icon: Icon, label, value, color }) {
       className="
         relative
         overflow-hidden
-        rounded-3xl
+        rounded-xl
         bg-white
         border
         border-[#ECE7DB]
         shadow-sm
-        hover:shadow-xl
+        hover:shadow-md
         transition-all
         duration-300
         hover:-translate-y-1
-        p-6
+        p-4
       "
     >
       <div
-        className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10"
+        className="absolute top-0 right-0 w-16 h-16 rounded-full opacity-10"
         style={{
           background: color,
           transform: "translate(30%,-30%)",
@@ -350,153 +324,27 @@ function StatCard({ icon: Icon, label, value, color }) {
       />
 
       <div
-        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
+        className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
         style={{
           background: `${color}20`,
         }}
       >
         <Icon
-          size={24}
+          size={18}
           style={{
             color,
           }}
         />
       </div>
 
-      <p className="text-[#6B7280] text-sm font-medium">
+      <p className="text-[#6B7280] text-xs font-medium">
         {label}
       </p>
 
-      <h3 className="text-4xl font-bold text-[#1C2520] mt-2">
+      <h3 className="text-2xl font-bold text-[#1C2520] mt-1">
         {value}
       </h3>
-
-      <div className="mt-5 flex items-center gap-2">
-        <TrendingUp
-          size={16}
-          color={color}
-        />
-
-        <span
-          className="text-sm font-medium"
-          style={{
-            color,
-          }}
-        >
-          Performance
-        </span>
-      </div>
     </div>
   );
 }
-{/* Top annonce */}
-
-{topAnnonce && (
-  <div className="grid lg:grid-cols-2 gap-6">
-
-    <div className="bg-gradient-to-r from-[#047857] to-[#0f9b6d] rounded-3xl text-white p-7 shadow-xl">
-
-      <div className="flex items-center gap-3 mb-5">
-
-        <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">
-          <Trophy size={28} />
-        </div>
-
-        <div>
-
-          <p className="text-sm opacity-80">
-            Meilleure annonce
-          </p>
-
-          <h2 className="text-2xl font-bold">
-            {topAnnonce.title}
-          </h2>
-
-        </div>
-
-      </div>
-
-      <div className="grid grid-cols-3 gap-5 mt-8">
-
-        <div>
-
-          <p className="opacity-80 text-sm">
-            Vues
-          </p>
-
-          <h3 className="text-3xl font-bold">
-            {topAnnonce.total_views}
-          </h3>
-
-        </div>
-
-        <div>
-
-          <p className="opacity-80 text-sm">
-            Favoris
-          </p>
-
-          <h3 className="text-3xl font-bold">
-            {topAnnonce.favorites_count}
-          </h3>
-
-        </div>
-
-        <div>
-
-          <p className="opacity-80 text-sm">
-            Messages
-          </p>
-
-          <h3 className="text-3xl font-bold">
-            {topAnnonce.messages_count}
-          </h3>
-
-        </div>
-
-      </div>
-
-    </div>
-
-    <div className="bg-white rounded-3xl border border-[#ECE7DB] shadow-sm p-7">
-
-      <h2 className="text-xl font-semibold mb-6 text-[#1C2520]">
-        Répartition des vues
-      </h2>
-
-      <ResponsiveContainer
-        width="100%"
-        height={260}
-      >
-
-        <PieChart>
-
-          <Pie
-            data={pieData}
-            dataKey="value"
-            outerRadius={95}
-            innerRadius={55}
-            paddingAngle={4}
-          >
-
-            {pieData.map((entry, index) => (
-
-              <Cell
-                key={index}
-                fill={COLORS[index % COLORS.length]}
-              />
-
-            ))}
-
-          </Pie>
-
-          <Tooltip />
-
-        </PieChart>
-
-      </ResponsiveContainer>
-
-    </div>
-
-  </div>
-)}}
+}

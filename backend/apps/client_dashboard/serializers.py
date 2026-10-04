@@ -111,6 +111,7 @@ class VisitRequestSerializer(serializers.ModelSerializer):
         ]
 
         read_only_fields = [
+            "client",
             "created_at",
             "updated_at",
             "completed_at",

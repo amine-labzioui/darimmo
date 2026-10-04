@@ -18,6 +18,13 @@ import { formatDateTime, formatPriceWithCurrency } from "../../utils/formatters"
 import LoadingSpinner from "../Shared/LoadingSpinner";
 import EmptyState from "../Shared/EmptyState";
 
+// Origine du backend (ex. http://localhost:8000), déduite de l'URL de l'API :
+// l'API des visites renvoie un chemin d'image relatif (/media/...).
+const API_ORIGIN = new URL(
+  import.meta.env.VITE_API_URL || "http://localhost:8000/api",
+  window.location.origin
+).origin;
+
 export default function VisitRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +54,7 @@ export default function VisitRequests() {
         return {
           color:
             "bg-emerald-50 border border-emerald-200 text-emerald-700",
-          icon: <CheckCircle2 size={16} />,
+          icon: <CheckCircle2 size={14} />,
           label: "Visite confirmée",
         };
 
@@ -55,7 +62,7 @@ export default function VisitRequests() {
         return {
           color:
             "bg-amber-50 border border-amber-200 text-amber-700",
-          icon: <Clock3 size={16} />,
+          icon: <Clock3 size={14} />,
           label: "En attente",
         };
 
@@ -63,7 +70,7 @@ export default function VisitRequests() {
         return {
           color:
             "bg-red-50 border border-red-200 text-red-700",
-          icon: <XCircle size={16} />,
+          icon: <XCircle size={14} />,
           label: "Refusée",
         };
 
@@ -71,7 +78,7 @@ export default function VisitRequests() {
         return {
           color:
             "bg-blue-50 border border-blue-200 text-blue-700",
-          icon: <Calendar size={16} />,
+          icon: <Calendar size={14} />,
           label: "Nouvelle date proposée",
         };
 
@@ -79,7 +86,7 @@ export default function VisitRequests() {
         return {
           color:
             "bg-gray-50 border border-gray-200 text-gray-600",
-          icon: <CalendarCheck size={16} />,
+          icon: <CalendarCheck size={14} />,
           label: req.status,
         };
     }
@@ -104,11 +111,11 @@ export default function VisitRequests() {
     );
   }
     return (
-    <div className="space-y-8">
+    <div className="space-y-6">
 
       <div>
         <h1
-          className="text-3xl text-[#1C2520]"
+          className="text-2xl text-[#1C2520]"
           style={{
             fontFamily: "'Fraunces', serif",
             fontWeight: 600,
@@ -117,12 +124,12 @@ export default function VisitRequests() {
           Mes demandes de visite
         </h1>
 
-        <p className="mt-2 text-[#6B7280]">
+        <p className="mt-1 text-sm text-[#6B7280]">
           Retrouvez toutes vos demandes de visite ainsi que les réponses des agences.
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-3">
 
         {requests.map((req) => {
           const status = getStatus(req);
@@ -134,33 +141,33 @@ export default function VisitRequests() {
                 bg-white
                 border
                 border-[#ECE7DD]
-                rounded-[28px]
+                rounded-xl
                 overflow-hidden
                 shadow-sm
-                hover:shadow-lg
+                hover:shadow-md
                 transition-all
                 duration-300
               "
             >
 
-              <div className="grid lg:grid-cols-[240px_1fr_240px]">
+              <div className="grid lg:grid-cols-[176px_1fr_208px]">
 
                 {/* IMAGE */}
 
-                <div className="bg-[#F8F6F2] p-5">
+                <div className="bg-[#F8F6F2] p-3">
 
                     <img
                       src={
                         req.main_image
-                          ? `http://127.0.0.1:8000${req.main_image}`
-                          : "https://placehold.co/500x350?text=DarImmo"
+                          ? new URL(req.main_image, API_ORIGIN).href
+                          : "/placeholder-property.svg"
                       }
                     alt={req.annonce_title}
                     className="
                       w-full
-                      h-44
+                      h-28
                       object-cover
-                      rounded-2xl
+                      rounded-lg
                     "
                   />
 
@@ -168,20 +175,20 @@ export default function VisitRequests() {
 
                 {/* INFOS */}
 
-                <div className="p-7 flex flex-col justify-between">
+                <div className="p-4 flex flex-col justify-between">
 
                   <div>
 
-                    <div className="flex items-center gap-3 mb-3">
+                    <div className="flex items-center gap-3 mb-1">
 
-                      <span className="text-xs uppercase tracking-[3px] text-[#A8A29E]">
+                      <span className="text-[11px] uppercase tracking-wide text-[#A8A29E]">
                         Demande de visite
                       </span>
 
                     </div>
 
                     <h2
-                      className="text-2xl text-[#1C2520]"
+                      className="text-base font-semibold text-[#1C2520]"
                       style={{
                         fontFamily: "'Fraunces', serif",
                       }}
@@ -189,9 +196,9 @@ export default function VisitRequests() {
                       {req.annonce_title}
                     </h2>
 
-                    <div className="flex items-center gap-2 mt-2 text-[#6B7280]">
+                    <div className="flex items-center gap-1.5 mt-1 text-sm text-[#6B7280]">
 
-                      <MapPin size={16} />
+                      <MapPin size={14} />
 
                       <span>
                         {req.annonce_city}
@@ -200,22 +207,22 @@ export default function VisitRequests() {
                     </div>
 
                     {req.price && (
-                      <div className="mt-4 text-2xl font-semibold text-[#047857]">
+                      <div className="mt-2 text-lg font-semibold text-[#047857]">
                         {formatPriceWithCurrency(req.price)}
                       </div>
                     )}
 
-                    <div className="grid md:grid-cols-2 gap-6 mt-7">
+                    <div className="grid md:grid-cols-2 gap-4 mt-4">
 
                       <div>
 
-                        <div className="text-xs uppercase text-gray-400 mb-2">
+                        <div className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">
                           Date demandée
                         </div>
 
-                        <div className="flex items-center gap-2 text-[#1C2520]">
+                        <div className="flex items-center gap-2 text-sm text-[#1C2520]">
 
-                          <Calendar size={18} />
+                          <Calendar size={16} />
 
                           {formatDateTime(req.requested_date)}
 
@@ -227,13 +234,13 @@ export default function VisitRequests() {
 
                         <div>
 
-                          <div className="text-xs uppercase text-gray-400 mb-2">
+                          <div className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">
                             Nouvelle date
                           </div>
 
-                          <div className="flex items-center gap-2 text-[#2563EB]">
+                          <div className="flex items-center gap-2 text-sm text-[#2563EB]">
 
-                            <CalendarCheck size={18} />
+                            <CalendarCheck size={16} />
 
                             {formatDateTime(req.proposed_date)}
 
@@ -247,13 +254,13 @@ export default function VisitRequests() {
 
                         <div>
 
-                          <div className="text-xs uppercase text-gray-400 mb-2">
+                          <div className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">
                             Date confirmée
                           </div>
 
-                          <div className="flex items-center gap-2 text-[#047857]">
+                          <div className="flex items-center gap-2 text-sm text-[#047857]">
 
-                            <CheckCircle2 size={18} />
+                            <CheckCircle2 size={16} />
 
                             {formatDateTime(req.confirmed_date)}
 
@@ -269,24 +276,24 @@ export default function VisitRequests() {
 
                       <div
                         className="
-                          mt-7
-                          rounded-2xl
+                          mt-4
+                          rounded-lg
                           bg-[#FAFAFA]
                           border
                           border-[#ECECEC]
-                          p-5
+                          p-3
                         "
                       >
 
-                        <div className="flex items-center gap-2 font-semibold text-[#1C2520] mb-3">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-[#1C2520] mb-1.5">
 
-                          <MessageSquare size={18} />
+                          <MessageSquare size={16} />
 
                           Message de l'agence
 
                         </div>
 
-                        <p className="text-[#555] whitespace-pre-line leading-7">
+                        <p className="text-sm text-[#555] whitespace-pre-line leading-6">
                           {req.owner_message}
                         </p>
 
@@ -300,7 +307,7 @@ export default function VisitRequests() {
 
                 {/* ACTIONS */}
 
-                <div className="border-l border-[#ECE7DD] p-7 flex flex-col justify-between">
+                <div className="border-t lg:border-t-0 lg:border-l border-[#ECE7DD] p-4 flex flex-col justify-between">
 
                   <div>
 
@@ -308,10 +315,11 @@ export default function VisitRequests() {
                       className={`
                         inline-flex
                         items-center
-                        gap-2
-                        px-4
-                        py-3
-                        rounded-2xl
+                        gap-1.5
+                        px-2.5
+                        py-1
+                        rounded-full
+                        text-xs
                         font-semibold
                         ${status.color}
                       `}
@@ -320,25 +328,25 @@ export default function VisitRequests() {
                       {status.label}
                     </div>
 
-                    <div className="mt-8 space-y-4">
+                    <div className="mt-4 space-y-3">
 
                       <div>
-                        <div className="text-xs uppercase text-gray-400 mb-1">
+                        <div className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">
                           Créée le
                         </div>
 
-                        <div className="font-medium">
+                        <div className="text-sm font-medium">
                           {formatDateTime(req.created_at)}
                         </div>
                       </div>
 
                       {req.updated_at && (
                         <div>
-                          <div className="text-xs uppercase text-gray-400 mb-1">
+                          <div className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">
                             Dernière mise à jour
                           </div>
 
-                          <div className="font-medium">
+                          <div className="text-sm font-medium">
                             {formatDateTime(req.updated_at)}
                           </div>
                         </div>
@@ -348,7 +356,7 @@ export default function VisitRequests() {
 
                   </div>
 
-                  <div className="space-y-3 mt-8">
+                  <div className="mt-4">
 
                     <Link
                       to={`/annonces/${req.annonce_id}`}
@@ -358,10 +366,11 @@ export default function VisitRequests() {
                         justify-center
                         gap-2
                         w-full
-                        rounded-2xl
+                        rounded-lg
                         border
                         border-[#1C2520]
-                        py-4
+                        py-2
+                        text-sm
                         font-semibold
                         text-[#1C2520]
                         hover:bg-[#1C2520]
@@ -370,42 +379,8 @@ export default function VisitRequests() {
                       "
                     >
                       Voir l'annonce
-                      <ArrowRight size={18} />
+                      <ArrowRight size={16} />
                     </Link>
-
-                    {req.status === "rescheduled" && (
-                      <button
-                        className="
-                          w-full
-                          rounded-2xl
-                          py-4
-                          bg-[#047857]
-                          text-white
-                          font-semibold
-                          hover:bg-[#03664F]
-                          transition
-                        "
-                      >
-                        Confirmer la nouvelle date
-                      </button>
-                    )}
-
-                    {req.status === "pending" && (
-                      <button
-                        className="
-                          w-full
-                          rounded-2xl
-                          py-4
-                          border
-                          border-red-300
-                          text-red-600
-                          hover:bg-red-50
-                          transition
-                        "
-                      >
-                        Annuler la demande
-                      </button>
-                    )}
 
                   </div>
 

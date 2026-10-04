@@ -6,18 +6,18 @@ export default function SimilarPropertiesSection({
   if (!annonces.length) return null;
 
   return (
-    <section className="max-w-7xl mx-auto px-6 pb-24">
+    <section className="max-w-7xl mx-auto px-6 pb-12">
 
-      <div className="flex items-end justify-between mb-12">
+      <div className="flex items-end justify-between mb-6">
 
         <div>
 
-          <span className="uppercase tracking-[4px] text-sm font-semibold text-[#C2622D]">
+          <span className="uppercase tracking-wide text-[11px] font-semibold text-[#C2622D]">
             Suggestions
           </span>
 
           <h2
-            className="mt-4 text-5xl text-[#1C2520]"
+            className="mt-1 text-lg text-[#1C2520]"
             style={{
               fontFamily: "'Fraunces', serif",
               fontWeight: 600,
@@ -26,7 +26,7 @@ export default function SimilarPropertiesSection({
             Biens similaires
           </h2>
 
-          <p className="mt-4 text-[#6B7280] text-lg">
+          <p className="mt-1 text-[#6B7280] text-sm">
             D'autres biens qui pourraient vous intéresser.
           </p>
 
@@ -34,7 +34,7 @@ export default function SimilarPropertiesSection({
 
       </div>
 
-      <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-8">
+      <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-4">
 
         {annonces.map((annonce) => (
 

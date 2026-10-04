@@ -7,6 +7,7 @@ import AgencyVisitRequests from "../components/Agency/AgencyVisitRequests";
 import AgencyDashboard from "../components/Agency/Dashboard";
 import Messages from "../components/Client/Messages";
 import Profile from "../components/Client/Profile";
+import ChangePassword from "../components/Client/ChangePassword";
 
 import { Routes, Route } from "react-router-dom";
 import {
@@ -16,12 +17,12 @@ import {
   MessageSquare,
   BarChart3,
   User,
+  Lock,
 } from "lucide-react";
 
 import Sidebar from "../components/Shared/Sidebar";
 
 export default function AgencyDashboardPage() {
-    console.log("AGENCY DASHBOARD LOADED");
   const items = [
     {
       to: "/agence",
@@ -53,6 +54,11 @@ export default function AgencyDashboardPage() {
       to: "/agence/profil",
       label: "Profil",
       icon: User,
+    },
+    {
+      to: "/agence/securite",
+      label: "Sécurité",
+      icon: Lock,
     },
   ];
 
@@ -101,6 +107,10 @@ export default function AgencyDashboardPage() {
   <Route
     path="profil"
     element={<Profile />}
+/>
+<Route
+    path="securite"
+    element={<ChangePassword />}
 />
 
 </Routes>

@@ -21,18 +21,18 @@ export default function DescriptionSection({ annonce }) {
   if (annonce.is_furnished) pointsForts.push("Bien meublé");
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
 
       {/* DESCRIPTION */}
 
-      <section className="rounded-[30px] bg-white border border-[#ECE7DD] shadow-lg p-8">
+      <section className="rounded-xl bg-white border border-[#ECE7DD] shadow-sm p-5">
 
-        <span className="uppercase tracking-[4px] text-xs font-semibold text-[#C2622D]">
+        <span className="uppercase tracking-wide text-[11px] font-semibold text-[#C2622D]">
           Description
         </span>
 
         <h2
-          className="mt-4 text-3xl text-[#1C2520]"
+          className="mt-1 text-lg text-[#1C2520]"
           style={{
             fontFamily: "'Fraunces', serif",
             fontWeight: 600,
@@ -41,7 +41,7 @@ export default function DescriptionSection({ annonce }) {
           À propos de ce bien
         </h2>
 
-        <div className="mt-8 space-y-5 text-[17px] leading-8 text-[#4B5563] whitespace-pre-line">
+        <div className="mt-3 space-y-3 text-[15px] leading-7 text-[#4B5563] whitespace-pre-line">
 
           {annonce.description}
 
@@ -51,13 +51,13 @@ export default function DescriptionSection({ annonce }) {
 
       {/* POINTS FORTS */}
 
-      <section className="rounded-[30px] bg-white border border-[#ECE7DD] shadow-lg p-8">
+      <section className="rounded-xl bg-white border border-[#ECE7DD] shadow-sm p-5">
 
-        <span className="uppercase tracking-[4px] text-xs font-semibold text-[#C2622D]">
+        <span className="uppercase tracking-wide text-[11px] font-semibold text-[#C2622D]">
           Points forts
         </span>
 
-        <div className="grid md:grid-cols-2 gap-4 mt-8">
+        <div className="grid md:grid-cols-2 gap-3 mt-4">
 
           {pointsForts.length ? (
             pointsForts.map((item) => (
@@ -67,14 +67,14 @@ export default function DescriptionSection({ annonce }) {
                   flex
                   items-center
                   gap-3
-                  rounded-2xl
+                  rounded-lg
                   bg-[#F7FBF9]
-                  px-5
-                  py-4
+                  px-3
+                  py-2.5 text-sm
                 "
               >
                 <CheckCircle2
-                  size={20}
+                  size={16}
                   className="text-[#047857]"
                 />
 
@@ -85,7 +85,7 @@ export default function DescriptionSection({ annonce }) {
               </div>
             ))
           ) : (
-            <p className="text-[#6B7280]">
+            <p className="text-sm text-[#6B7280]">
               Aucun équipement renseigné.
             </p>
           )}
@@ -96,13 +96,13 @@ export default function DescriptionSection({ annonce }) {
 
       {/* INFORMATIONS */}
 
-      <section className="rounded-[30px] bg-white border border-[#ECE7DD] shadow-lg p-8">
+      <section className="rounded-xl bg-white border border-[#ECE7DD] shadow-sm p-5">
 
-        <span className="uppercase tracking-[4px] text-xs font-semibold text-[#C2622D]">
+        <span className="uppercase tracking-wide text-[11px] font-semibold text-[#C2622D]">
           Informations
         </span>
 
-        <div className="grid md:grid-cols-2 gap-5 mt-8">
+        <div className="grid md:grid-cols-2 gap-3 mt-4">
 
           <InfoCard
             icon={Home}
@@ -145,14 +145,14 @@ export default function DescriptionSection({ annonce }) {
       </section>
       {/* LOCALISATION */}
 
-<section className="rounded-[30px] bg-white border border-[#ECE7DD] shadow-lg p-8">
+<section className="rounded-xl bg-white border border-[#ECE7DD] shadow-sm p-5">
 
-  <span className="uppercase tracking-[4px] text-xs font-semibold text-[#C2622D]">
+  <span className="uppercase tracking-wide text-[11px] font-semibold text-[#C2622D]">
     Localisation
   </span>
 
   <h2
-    className="mt-4 text-3xl text-[#1C2520]"
+    className="mt-1 text-lg text-[#1C2520]"
     style={{
       fontFamily: "'Fraunces', serif",
       fontWeight: 600,
@@ -163,7 +163,7 @@ export default function DescriptionSection({ annonce }) {
 
   {annonce.latitude && annonce.longitude ? (
 
-    <div className="mt-8 overflow-hidden rounded-[24px] border border-[#ECE7DD]">
+    <div className="mt-4 overflow-hidden rounded-lg border border-[#ECE7DD]">
 
   <MapContainer
     center={[
@@ -172,7 +172,7 @@ export default function DescriptionSection({ annonce }) {
     ]}
     zoom={15}
     style={{
-      height: "420px",
+      height: "320px",
       width: "100%",
     }}
     scrollWheelZoom={false}
@@ -195,22 +195,22 @@ export default function DescriptionSection({ annonce }) {
 
   ) : (
 
-    <div className="mt-8 rounded-2xl bg-[#F8FAF9] border border-[#ECE7DD] p-10 text-center">
+    <div className="mt-4 rounded-lg bg-[#F8FAF9] border border-[#ECE7DD] p-6 text-center">
 
-      <div className="w-16 h-16 mx-auto rounded-full bg-[#EEF8F3] flex items-center justify-center">
+      <div className="w-12 h-12 mx-auto rounded-full bg-[#EEF8F3] flex items-center justify-center">
 
         <Map
-          size={30}
+          size={22}
           className="text-[#047857]"
         />
 
       </div>
 
-      <h3 className="mt-5 text-xl font-semibold text-[#1C2520]">
+      <h3 className="mt-3 text-base font-semibold text-[#1C2520]">
         Localisation indisponible
       </h3>
 
-      <p className="mt-3 text-[#6B7280] max-w-md mx-auto">
+      <p className="mt-1 text-sm text-[#6B7280] max-w-md mx-auto">
         Le propriétaire n'a pas encore renseigné les coordonnées GPS de ce bien.
       </p>
 
@@ -226,14 +226,14 @@ export default function DescriptionSection({ annonce }) {
 
 function InfoCard({ icon: Icon, label, value }) {
   return (
-    <div className="rounded-2xl border border-[#ECE7DD] p-5 hover:shadow-md transition">
+    <div className="rounded-lg border border-[#ECE7DD] p-3 hover:shadow-sm transition">
 
       <div className="flex items-center gap-3">
 
-        <div className="w-12 h-12 rounded-xl bg-[#F3FBF7] flex items-center justify-center">
+        <div className="w-9 h-9 rounded-lg bg-[#F3FBF7] flex items-center justify-center">
 
           <Icon
-            size={22}
+            size={16}
             className="text-[#047857]"
           />
 
@@ -241,11 +241,11 @@ function InfoCard({ icon: Icon, label, value }) {
 
         <div>
 
-          <div className="text-sm text-[#6B7280]">
+          <div className="text-xs text-[#6B7280]">
             {label}
           </div>
 
-          <div className="mt-1 font-semibold capitalize text-[#1C2520]">
+          <div className="mt-0.5 text-sm font-semibold capitalize text-[#1C2520]">
             {value}
           </div>
 

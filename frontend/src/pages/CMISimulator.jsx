@@ -7,10 +7,12 @@ import {
 } from "lucide-react";
 
 import api from "../services/api";
+import { useNotification } from "../hooks/useNotification";
 
 export default function CMISimulator() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { pushToast } = useNotification();
 
   const transactionId = params.get("transaction");
 
@@ -31,16 +33,21 @@ export default function CMISimulator() {
 
       await new Promise((r) => setTimeout(r, 1800));
 
-      console.log("ACCESS TOKEN");
-      console.log(localStorage.getItem("darimmo_access_token"));
       await api.post("/payments/simulate/", {
         transaction_id: transactionId,
       });
 
       navigate(`/paiement/succes?transaction=${transactionId}`);
     } catch (err) {
-  console.error(err.response?.data);
-}
+      console.error(err.response?.data);
+      pushToast({
+        type: "error",
+        title: "Le paiement n'a pas pu être effectué",
+        message: "Veuillez réessayer dans un instant.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

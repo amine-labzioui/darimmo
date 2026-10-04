@@ -21,10 +21,11 @@ export default function ContactModal({
         onChange={(e) => setMessage(e.target.value)}
         className="
           w-full
-          rounded-2xl
+          rounded-lg
           border
           border-[#E6DFD0]
-          p-4
+          p-3
+          text-sm
           outline-none
           resize-none
           focus:border-[#047857]
@@ -35,11 +36,12 @@ export default function ContactModal({
         onClick={onSubmit}
         disabled={sending}
         className="
-          mt-5
+          mt-4
           w-full
-          rounded-2xl
+          rounded-lg
           bg-[#047857]
-          py-4
+          py-2
+          text-sm
           text-white
           font-semibold
           hover:bg-[#03664F]
@@ -51,7 +53,7 @@ export default function ContactModal({
           disabled:opacity-50
         "
       >
-        <Send size={18} />
+        <Send size={16} />
 
         {sending ? "Envoi..." : "Envoyer le message"}
       </button>

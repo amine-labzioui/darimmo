@@ -6,11 +6,14 @@ import { formatPriceWithCurrency } from "../../utils/formatters";
 import { ANNONCE_STATUS } from "../../utils/constants";
 import LoadingSpinner from "../Shared/LoadingSpinner";
 import EmptyState from "../Shared/EmptyState";
-import { getMainImageUrl } from "../../utils/helpers";
+import { getMainImageUrl, isBoostActive } from "../../utils/helpers";
 import { Rocket } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
 
 export default function MyAnnonces() {
   const navigate = useNavigate();
+  const { isAgence } = useAuth();
+  const dashboardBase = isAgence ? "/agence" : "/client";
 
   const [annonces, setAnnonces] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +53,7 @@ export default function MyAnnonces() {
           Mes annonces
         </h1>
         <Link
-          to="/agence/annonces/nouvelle"
+          to={`${dashboardBase}/annonces/nouvelle`}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#047857] text-white text-[14px] font-medium hover:bg-[#035f46] transition-colors"
         >
           <Plus size={17} /> Nouvelle annonce
@@ -64,7 +67,7 @@ export default function MyAnnonces() {
           description="Créez votre première annonce pour commencer à recevoir des contacts."
           action={
             <Link
-              to="/agence/annonces/nouvelle"
+              to={`${dashboardBase}/annonces/nouvelle`}
               className="px-5 py-2.5 rounded-xl bg-[#047857] text-white text-[14px] font-medium hover:bg-[#035f46] transition-colors"
             >
               Publier une annonce
@@ -79,7 +82,7 @@ export default function MyAnnonces() {
             return (
               <Link
                 key={a.id}
-                to={`/agence/annonces/${a.id}/modifier`}
+                to={`${dashboardBase}/annonces/${a.id}/modifier`}
                 className="flex items-center gap-4 bg-white rounded-2xl border border-[#E6DFD0] p-4 hover:shadow-md transition-shadow"
               >
                 <img
@@ -94,7 +97,7 @@ export default function MyAnnonces() {
                     {a.city} · {formatPriceWithCurrency(a.price, a.transaction_type)}
                   </p>
                   <div className="flex items-center gap-3 mt-1.5">
-                    {a.is_boosted ? (
+                    {isBoostActive(a) ? (
   <div className="mt-2 flex items-center gap-2 flex-wrap">
 
     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
@@ -102,18 +105,18 @@ export default function MyAnnonces() {
       Premium
     </span>
 
-    <span className="text-xs text-[#047857] font-medium">
-        {remainingDays > 0
-        ? `Expire dans ${remainingDays} jour${remainingDays > 1 ? "s" : ""}`
-         : "Expiré"}
-    </span>
+    {remainingDays > 0 && (
+      <span className="text-xs text-[#047857] font-medium">
+        {`Expire dans ${remainingDays} jour${remainingDays > 1 ? "s" : ""}`}
+      </span>
+    )}
 
   </div>
-) : (
+) : a.status === "published" ? (
   <div className="mt-2">
 
     <Link
-  to={`/agence/annonces/${a.id}/boost`}
+  to={`${dashboardBase}/annonces/${a.id}/boost`}
   onClick={(e) => e.stopPropagation()}
   className="inline-block rounded-lg bg-[#047857] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#035f46]"
 >
@@ -121,8 +124,8 @@ export default function MyAnnonces() {
 </Link>
 
   </div>
-)}
-                    <span className={`px-2.5 py-0.5 rounded-full text-[11.5px] font-medium bg-${status?.color}-100 text-${status?.color}-700`}>
+) : null}
+                    <span className={`px-2.5 py-0.5 rounded-full text-[11.5px] font-medium ${status?.badgeClass || ""}`}>
                       {status?.label}
                     </span>
                     <span className="flex items-center gap-1 text-[12px] text-[#8C9189]">

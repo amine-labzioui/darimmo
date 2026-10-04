@@ -4,18 +4,10 @@ Gère le démarrage des paiements (Stripe Checkout / CMI) et les webhooks.
 """
 
 import traceback
-from turtle import title
 from .stripe_handler import StripeHandler
 import logging
 
-from io import BytesIO
 from django.http import FileResponse
-from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle, Paragraph
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.enums import TA_CENTER
-from reportlab.lib.units import cm
-from reportlab.platypus import Spacer
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -27,6 +19,7 @@ from rest_framework.views import APIView
 from apps.annonces.models import Annonce
 
 from .cmi_handler import CMIHandler
+from .invoice_pdf import build_invoice_pdf
 from .models import BoostPlan, Transaction
 from .serializers import BoostPlanSerializer, CreateCheckoutSerializer, TransactionSerializer
 
@@ -239,27 +232,15 @@ class SimulatePaymentView(APIView):
 
 
 class InvoiceView(APIView):
+    """GET /api/payments/invoice/{transaction_id}/?token=... — Facture PDF d'un boost payé."""
+
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, transaction_id):
-        from rest_framework_simplejwt.tokens import AccessToken
+        from datetime import timedelta
+
         from django.contrib.auth import get_user_model
-
-        from io import BytesIO
-        from django.http import FileResponse
-
-        from reportlab.lib import colors
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.enums import TA_CENTER
-        from reportlab.lib.styles import getSampleStyleSheet
-        from reportlab.lib.units import cm
-        from reportlab.platypus import (
-            SimpleDocTemplate,
-            Paragraph,
-            Spacer,
-            Table,
-            TableStyle,
-        )
+        from rest_framework_simplejwt.tokens import AccessToken
 
         token = request.GET.get("token")
 
@@ -278,247 +259,49 @@ class InvoiceView(APIView):
             user=user,
         )
 
-        buffer = BytesIO()
-
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=A4,
-            rightMargin=1.5 * cm,
-            leftMargin=1.5 * cm,
-            topMargin=1.5 * cm,
-            bottomMargin=1.5 * cm,
-        )
-
-        styles = getSampleStyleSheet()
-
-        title = styles["Title"]
-        title.alignment = TA_CENTER
-        title.textColor = colors.HexColor("#047857")
-
-        heading = styles["Heading2"]
-        heading.alignment = TA_CENTER
-        heading.textColor = colors.HexColor("#047857")
-
-        normal = styles["BodyText"]
-
-        elements = []
-
-        # ======================================================
-        # HEADER
-        # ======================================================
-
-        elements.append(
-            Paragraph(
-                "<font size='28'><b>DarImmo</b></font>",
-                title,
+        if transaction.status != Transaction.Status.SUCCEEDED:
+            return Response(
+                {"detail": "La facture est disponible uniquement pour un paiement réussi."},
+                status=400,
             )
-        )
 
-        elements.append(
-            Paragraph(
-                "<font color='#666666' size='11'>La plateforme immobilière premium au Maroc</font>",
-                normal,
-            )
-        )
+        # Dates affichées dans le fuseau du projet (Africa/Casablanca).
+        created_at = transaction.created_at
+        if timezone.is_aware(created_at):
+            created_at = timezone.localtime(created_at)
+        issue_date = created_at.date()
 
-        elements.append(Spacer(1, 12))
+        plan = transaction.boost_plan
+        annonce = transaction.annonce
 
-        elements.append(
-            Paragraph(
-                "<font size='22'><b>FACTURE</b></font>",
-                heading,
-            )
-        )
+        amount = transaction.amount
+        if isinstance(amount, Decimal128):
+            amount = amount.to_decimal()
 
-        elements.append(Spacer(1, 8))
+        # Le paiement passe par le simulateur CMI du projet.
+        payment_modes = {Transaction.Provider.CMI: "CMI (simulation)"}
 
-        invoice_number = f"FCT-{timezone.now().year}-{transaction.id:06d}"
-
-        elements.append(
-            Paragraph(
-                f"<b>Facture :</b> {invoice_number}",
-                normal,
-            )
-        )
-
-        elements.append(
-            Paragraph(
-                f"<b>Date :</b> {transaction.created_at.strftime('%d/%m/%Y %H:%M')}",
-                normal,
-            )
-        )
-
-        elements.append(Spacer(1, 20))
-
-        # ======================================================
-        # SOCIETE / CLIENT
-        # ======================================================
-
-        company_table = Table(
-            [[
-                Paragraph(
-                    """
-                    <b><font color="#047857" size="13">DarImmo</font></b><br/><br/>
-                    123 Boulevard Mohammed V<br/>
-                    Casablanca 20000<br/>
-                    Maroc<br/>
-                    contact@darimmo.ma<br/>
-                    +212 5 22 00 00 00
-                    """,
-                    normal,
-                ),
-                Paragraph(
-                    f"""
-                    <b><font color="#047857" size="13">CLIENT</font></b><br/><br/>
-                    {transaction.user.get_full_name() or transaction.user.email}<br/>
-                    {transaction.user.email}
-                    """,
-                    normal,
-                ),
-            ]],
-            colWidths=[8 * cm, 8 * cm],
-        )
-
-        company_table.setStyle(
-            TableStyle(
-                [
-                    ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#DDDDDD")),
-                    ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#EEEEEE")),
-                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 12),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 12),
-                    ("TOPPADDING", (0, 0), (-1, -1), 12),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-                ]
-            )
-        )
-
-        elements.append(company_table)
-
-        elements.append(Spacer(1, 20))
-                # ======================================================
-        # DETAILS DE LA TRANSACTION
-        # ======================================================
-
-        table_data = [
-            ["Transaction", str(transaction.id)],
-            ["Référence", transaction.provider_reference or "-"],
-            [
-                "Annonce",
-                transaction.annonce.title if transaction.annonce else "-",
-            ],
-            [
-                "Formule",
-                transaction.boost_plan.name if transaction.boost_plan else "-",
-            ],
-            [
-                "Durée",
-                f"{transaction.boost_plan.duration_days} jours"
-                if transaction.boost_plan
-                else "-",
-            ],
-            ["Statut", transaction.get_status_display()],
-        ]
-
-        details_table = Table(
-            table_data,
-            colWidths=[6 * cm, 10 * cm],
-        )
-
-        details_table.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#047857")),
-                    ("TEXTCOLOR", (0, 0), (0, -1), colors.white),
-                    ("BACKGROUND", (1, 0), (1, -1), colors.whitesmoke),
-                    ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#DDDDDD")),
-                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-                    ("TOPPADDING", (0, 0), (-1, -1), 10),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-                ]
-            )
-        )
-
-        elements.append(details_table)
-
-        elements.append(Spacer(1, 25))
-
-        # ======================================================
-        # TOTAL
-        # ======================================================
-
-        total_table = Table(
-            [
-                [
-                    Paragraph("<b>Total payé</b>", normal),
-                    Paragraph(
-                        f"<b>{transaction.amount} MAD</b>",
-                        normal,
-                    ),
-                ]
-            ],
-            colWidths=[10 * cm, 6 * cm],
-        )
-
-        total_table.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#047857")),
-                    ("TEXTCOLOR", (0, 0), (-1, -1), colors.white),
-                    ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 14),
-                    ("ALIGN", (1, 0), (1, 0), "RIGHT"),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-                    ("TOPPADDING", (0, 0), (-1, -1), 12),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 12),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 12),
-                ]
-            )
-        )
-
-        elements.append(total_table)
-
-        elements.append(Spacer(1, 35))
-
-        elements.append(
-            Paragraph(
-                """
-                <font color="#16A34A">
-                <b>✓ Paiement confirmé</b>
-                </font>
-                """,
-                heading,
-            )
-        )
-
-        elements.append(Spacer(1, 10))
-
-        elements.append(
-            Paragraph(
-                """
-                Merci d'avoir choisi <b>DarImmo</b>.<br/>
-                Cette facture confirme votre paiement et l'activation
-                de votre annonce Premium.
-                """,
-                normal,
-            )
-        )
-
-        elements.append(Spacer(1, 35))
-
-        elements.append(
-            Paragraph(
-                "<font size='9' color='#888888'>© DarImmo - Plateforme immobilière premium</font>",
-                title,
-            )
-        )
-
-        doc.build(elements)
-
-        buffer.seek(0)
+        buffer = build_invoice_pdf({
+            "number": f"FCT-{created_at.year}-{transaction.id:06d}",
+            "issue_date": issue_date,
+            "client_name": transaction.user.get_full_name() or transaction.user.email,
+            "client_email": transaction.user.email,
+            "client_company": transaction.user.company_name,
+            "plan_name": plan.name if plan else None,
+            "duration_days": plan.duration_days if plan else None,
+            # Période calculée : la date de fin n'est pas stockée sur la transaction.
+            "period_start": issue_date if plan else None,
+            "period_end": issue_date + timedelta(days=plan.duration_days) if plan else None,
+            "annonce_title": annonce.title if annonce else None,
+            "annonce_id": annonce.id if annonce else None,
+            "amount": Decimal(str(amount)),
+            "payment_mode": payment_modes.get(
+                transaction.provider, transaction.get_provider_display()
+            ),
+            "reference": transaction.provider_reference,
+            "transaction_id": transaction.id,
+            "status_label": transaction.get_status_display(),
+        })
 
         return FileResponse(
             buffer,

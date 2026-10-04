@@ -4,6 +4,38 @@
 
 export const CITIES = ["Casablanca", "Marrakech", "Rabat", "Tanger", "Fès", "Agadir"];
 
+// Villes proposées dans les filtres. `value` = orthographe stockée en base
+// (la même que celle envoyée par l'agent de recherche n8n), `label` = texte affiché.
+export const CITY_OPTIONS = [
+  { value: "Casablanca", label: "Casablanca" },
+  { value: "Marrakesh", label: "Marrakech" },
+  { value: "Rabat", label: "Rabat" },
+  { value: "Tanger", label: "Tanger" },
+  { value: "Fès", label: "Fès" },
+  { value: "Agadir", label: "Agadir" },
+];
+
+const CITY_ALIASES = {
+  marrakech: "Marrakesh",
+  marrakesh: "Marrakesh",
+  casablanca: "Casablanca",
+  casa: "Casablanca",
+  rabat: "Rabat",
+  agadir: "Agadir",
+  tanger: "Tanger",
+  tangier: "Tanger",
+  fes: "Fès",
+  "fès": "Fès",
+  fez: "Fès",
+};
+
+// Ramène une ville saisie ou reçue (URL, carte) à son orthographe canonique.
+// Une ville inconnue est renvoyée telle quelle.
+export function normalizeCity(rawCity) {
+  if (!rawCity) return rawCity;
+  return CITY_ALIASES[rawCity.trim().toLowerCase()] || rawCity;
+}
+
 export const PROPERTY_TYPES = [
   { value: "villa", label: "Villa" },
   { value: "appartement", label: "Appartement" },
@@ -17,13 +49,15 @@ export const TRANSACTION_TYPES = [
   { value: "location", label: "À Louer" },
 ];
 
+// badgeClass : classes Tailwind écrites en entier (Tailwind ne génère pas les
+// classes construites dynamiquement, ex. `bg-${color}-100`).
 export const ANNONCE_STATUS = {
-  draft: { label: "Brouillon", color: "gray" },
-  pending: { label: "En attente de validation", color: "amber" },
-  published: { label: "Publiée", color: "primary" },
-  sold: { label: "Vendue", color: "terracotta" },
-  rented: { label: "Louée", color: "terracotta" },
-  archived: { label: "Archivée", color: "gray" },
+  draft: { label: "Brouillon", color: "gray", badgeClass: "bg-gray-100 text-gray-700" },
+  pending: { label: "En attente de validation", color: "amber", badgeClass: "bg-amber-100 text-amber-700" },
+  published: { label: "Publiée", color: "primary", badgeClass: "bg-primary-100 text-primary-700" },
+  sold: { label: "Vendue", color: "terracotta", badgeClass: "bg-terracotta-500/10 text-terracotta-600" },
+  rented: { label: "Louée", color: "terracotta", badgeClass: "bg-terracotta-500/10 text-terracotta-600" },
+  archived: { label: "Archivée", color: "gray", badgeClass: "bg-gray-100 text-gray-700" },
 };
 
 export const PRICE_RANGES = [

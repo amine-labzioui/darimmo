@@ -23,18 +23,11 @@ export default function AgencyDashboard() {
     async function loadDashboard() {
       try {
         const annonces = await api.get("/annonces/mes_annonces/");
-        console.log("ANNONCES =", annonces.data);
 
         const visites = await api.get("/agency-dashboard/visit-requests/");
-        console.log("VISITES =", visites.data);
 
         const annonceList = annonces.data.results || annonces.data;
         const visitList = visites.data.results || visites.data;
-        console.log(annonceList);
-        
-        console.log("Premier annonce =", annonceList[0]);
-
-        
 
         setStats({
           annonces: annonceList.length,
@@ -48,7 +41,7 @@ export default function AgencyDashboard() {
           ).length,
         });
       } catch (e) {
-        console.log(e);
+        console.error(e);
       } finally {
         setLoading(false);
       }
@@ -93,11 +86,11 @@ export default function AgencyDashboard() {
   ];
 
   return (
-  <div className="space-y-10">
+  <div className="space-y-6">
 
     <div>
       <h1
-        className="text-4xl text-[#1C2520]"
+        className="text-2xl text-[#1C2520]"
         style={{
           fontFamily: "'Fraunces', serif",
           fontWeight: 600,
@@ -106,22 +99,22 @@ export default function AgencyDashboard() {
         Tableau de bord
       </h1>
 
-      <p className="text-[#7B857D] mt-3 text-lg">
+      <p className="text-[#7B857D] mt-1 text-sm">
         Bienvenue dans votre espace professionnel.
       </p>
     </div>
 
-    <div className="grid grid-cols-2 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
 
       {cards.map((card) => (
 
         <div
           key={card.label}
-          className="bg-white rounded-3xl border border-[#ECE6DA] p-8"
+          className="bg-white rounded-xl border border-[#ECE6DA] p-4"
         >
 
           <div
-            className="text-[42px] text-[#1C2520]"
+            className="text-2xl text-[#1C2520]"
             style={{
               fontFamily: "'Fraunces', serif",
               fontWeight: 600,
@@ -130,7 +123,7 @@ export default function AgencyDashboard() {
             {card.value}
           </div>
 
-          <div className="mt-2 text-[#8B938D] text-sm tracking-wide uppercase">
+          <div className="mt-1 text-[#8B938D] text-[11px] tracking-wide uppercase">
             {card.label}
           </div>
 
@@ -138,14 +131,16 @@ export default function AgencyDashboard() {
 
       ))}
 
+      
+
     </div>
 
-    <div className="grid lg:grid-cols-2 gap-7">
+    <div className="grid lg:grid-cols-2 gap-4">
 
-      <div className="bg-white rounded-3xl border border-[#ECE6DA] p-8">
+      <div className="bg-white rounded-xl border border-[#ECE6DA] p-5">
 
         <h2
-          className="text-2xl text-[#1C2520]"
+          className="text-lg text-[#1C2520]"
           style={{
             fontFamily: "'Fraunces', serif",
             fontWeight: 600,
@@ -154,44 +149,44 @@ export default function AgencyDashboard() {
           Activité
         </h2>
 
-        <div className="mt-8 space-y-5">
+        <div className="mt-4 space-y-3">
 
           <div className="flex justify-between">
-            <span className="text-[#6C746E]">
+            <span className="text-sm text-[#6C746E]">
               Total des annonces
             </span>
 
-            <span className="font-semibold text-[#1C2520]">
+            <span className="text-sm font-semibold text-[#1C2520]">
               {stats.annonces}
             </span>
           </div>
 
           <div className="flex justify-between">
-            <span className="text-[#6C746E]">
+            <span className="text-sm text-[#6C746E]">
               Demandes de visite
             </span>
 
-            <span className="font-semibold text-[#1C2520]">
+            <span className="text-sm font-semibold text-[#1C2520]">
               {stats.visites}
             </span>
           </div>
 
           <div className="flex justify-between">
-            <span className="text-[#6C746E]">
+            <span className="text-sm text-[#6C746E]">
               Total des vues
             </span>
 
-            <span className="font-semibold text-[#1C2520]">
+            <span className="text-sm font-semibold text-[#1C2520]">
               {stats.vues}
             </span>
           </div>
 
           <div className="flex justify-between">
-            <span className="text-[#6C746E]">
+            <span className="text-sm text-[#6C746E]">
               Annonces boostées
             </span>
 
-            <span className="font-semibold text-[#1C2520]">
+            <span className="text-sm font-semibold text-[#1C2520]">
               {stats.boostees}
             </span>
           </div>
@@ -200,10 +195,10 @@ export default function AgencyDashboard() {
 
       </div>
 
-      <div className="bg-white rounded-3xl border border-[#ECE6DA] p-8">
+      <div className="bg-white rounded-xl border border-[#ECE6DA] p-5">
 
         <h2
-          className="text-2xl text-[#1C2520]"
+          className="text-lg text-[#1C2520]"
           style={{
             fontFamily: "'Fraunces', serif",
             fontWeight: 600,
@@ -212,25 +207,25 @@ export default function AgencyDashboard() {
           Actions rapides
         </h2>
 
-        <div className="mt-8 flex flex-col gap-4">
+        <div className="mt-4 flex flex-col gap-2">
 
           <Link
             to="/agence/annonces/nouvelle"
-            className="h-12 rounded-2xl bg-[#F7F4EE] flex items-center justify-center text-[#1C2520] hover:bg-[#EEE7DA] transition-all"
+            className="h-9 rounded-lg text-sm bg-[#F7F4EE] flex items-center justify-center text-[#1C2520] hover:bg-[#EEE7DA] transition-all"
           >
             Ajouter une annonce
           </Link>
 
           <Link
             to="/agence/annonces"
-            className="h-12 rounded-2xl border border-[#E6DFD0] flex items-center justify-center text-[#1C2520] hover:bg-[#FAF8F4]"
+            className="h-9 rounded-lg text-sm border border-[#E6DFD0] flex items-center justify-center text-[#1C2520] hover:bg-[#FAF8F4]"
           >
             Gérer mes annonces
           </Link>
 
           <Link
             to="/agence/visites"
-            className="h-12 rounded-2xl border border-[#E6DFD0] flex items-center justify-center text-[#1C2520] hover:bg-[#FAF8F4]"
+            className="h-9 rounded-lg text-sm border border-[#E6DFD0] flex items-center justify-center text-[#1C2520] hover:bg-[#FAF8F4]"
           >
             Voir les visites
           </Link>

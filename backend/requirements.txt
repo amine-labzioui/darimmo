@@ -26,6 +26,9 @@ requests==2.31.0
 # ===== Payments =====
 stripe==8.4.0
 
+# ===== PDF (factures) =====
+reportlab==5.0.0
+
 # ===== Async tasks (Celery) =====
 celery==5.3.6
 redis==5.0.1

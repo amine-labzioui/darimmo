@@ -40,23 +40,23 @@ export default function Profile() {
   return (
     <div className="max-w-2xl">
       <h1
-        className="text-2xl text-[#1C2520] mb-7"
+        className="text-2xl text-[#1C2520] mb-5"
         style={{ fontFamily: "'Fraunces', serif", fontWeight: 600 }}
       >
         Mon profil
       </h1>
 
-      <div className="flex items-center gap-4 mb-7">
-        <div className="w-16 h-16 rounded-full bg-[#047857] text-white text-xl font-medium flex items-center justify-center">
-          {initials(user?.first_name, user?.last_name) || <User size={24} />}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-12 h-12 rounded-full bg-[#047857] text-white text-base font-medium flex items-center justify-center">
+          {initials(user?.first_name, user?.last_name) || <User size={20} />}
         </div>
         <div>
-          <p className="text-[16px] font-medium text-[#1C2520]">{user?.email}</p>
+          <p className="text-sm font-medium text-[#1C2520]">{user?.email}</p>
           <p className="text-[13px] text-[#5C6961]">{user?.role === "agence" ? "Agence immobilière" : "Client"}</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#E6DFD0] p-7 space-y-5">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-[#E6DFD0] p-5 space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <Field label="Prénom" name="first_name" value={values.first_name} onChange={handleChange} />
           <Field label="Nom" name="last_name" value={values.last_name} onChange={handleChange} />
@@ -68,7 +68,7 @@ export default function Profile() {
           <label className="block text-[13px] font-medium text-[#3F4A43] mb-1.5">Ville</label>
           <select
             name="city" value={values.city} onChange={handleChange}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-[#E6DFD0] text-[14.5px] outline-none focus:border-[#047857] bg-white"
+            className="w-full px-3 py-2 rounded-lg border border-[#E6DFD0] text-sm outline-none focus:border-[#047857] bg-white"
           >
             <option value="">Sélectionner</option>
             {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -81,9 +81,9 @@ export default function Profile() {
 
         <button
           type="submit" disabled={submitting}
-          className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#047857] text-white text-[14.5px] font-medium hover:bg-[#035f46] transition-colors disabled:opacity-60"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#047857] text-white text-sm font-medium hover:bg-[#035f46] transition-colors disabled:opacity-60"
         >
-          <Save size={17} />
+          <Save size={16} />
           {submitting ? "Enregistrement…" : "Enregistrer"}
         </button>
       </form>
@@ -97,7 +97,7 @@ function Field({ label, name, value, onChange }) {
       <label className="block text-[13px] font-medium text-[#3F4A43] mb-1.5">{label}</label>
       <input
         name={name} value={value} onChange={onChange}
-        className="w-full px-3.5 py-2.5 rounded-xl border border-[#E6DFD0] text-[14.5px] outline-none focus:border-[#047857]"
+        className="w-full px-3 py-2 rounded-lg border border-[#E6DFD0] text-sm outline-none focus:border-[#047857]"
       />
     </div>
   );

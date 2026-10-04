@@ -21,7 +21,6 @@ import AdminDashboardPage from "./pages/AdminDashboardPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AgencyDashboardPage from "./pages/AgencyDashboardPage";
 
-import ForgotPassword from "./components/Auth/ForgotPassword";
 import Favorites from "./components/Client/Favorites";
 import Messages from "./components/Client/Messages";
 import AIAssistant from "./components/Public/AIAssistant";
@@ -78,7 +77,8 @@ export default function App() {
                 <Route path="/assistant-ia" element={<AIAssistant />} />
                 <Route path="/connexion" element={<LoginPage />} />
                 <Route path="/inscription" element={<RegisterPage />} />
-                <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
+                {/* Réinitialisation par e-mail non disponible côté backend : page masquée */}
+                <Route path="/mot-de-passe-oublie" element={<Navigate to="/connexion" replace />} />
                 <Route path="/paiement/succes" element={<PaymentSuccess />} />
                 <Route path="/cmi-simulator"element={<CMISimulator />}
 />

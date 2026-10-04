@@ -151,11 +151,12 @@ export default function AnnonceDetail() {
         annonce={annonce}
         activeImage={activeImage}
         setActiveImage={setActiveImage}
+        onFavorite={handleFavorite}
       />
 
       <HeaderSection annonce={annonce} />
 
-      <div className="max-w-7xl mx-auto px-6 py-14 grid lg:grid-cols-[1fr_360px] gap-12">
+      <div className="max-w-7xl mx-auto px-6 py-8 grid lg:grid-cols-[1fr_320px] gap-6">
 
         <DescriptionSection annonce={annonce} />
 

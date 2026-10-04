@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 import { formatPriceWithCurrency } from "../../utils/formatters";
-import { getMainImageUrl } from "../../utils/helpers";
+import { getMainImageUrl, isBoostActive } from "../../utils/helpers";
 
 export default function AnnonceCard({
   annonce,
@@ -75,7 +75,7 @@ export default function AnnonceCard({
             {statusLabel}
           </span>
 
-          {annonce.is_boosted && (
+          {isBoostActive(annonce) && (
             <div
               className="
                 absolute

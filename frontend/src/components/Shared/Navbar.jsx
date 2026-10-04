@@ -14,7 +14,6 @@ import {
 
 import { useAuth } from "../../hooks/useAuth";
 import { useNotification } from "../../hooks/useNotification";
-import { messageService } from "../../services/messageService";
 import { initials } from "../../utils/formatters";
 
 const ZelligeStar = ({ className = "" }) => (
@@ -36,8 +35,6 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-
-  const [messageCount, setMessageCount] = useState(0);
 
   const dropdownRef = useRef(null);
 
@@ -72,24 +69,6 @@ export default function Navbar() {
       );
   }, []);
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    async function loadConversations() {
-      try {
-        const data = await messageService.getConversations();
-
-        const list = data.results || data;
-
-        setMessageCount(list.length);
-      } catch {
-        setMessageCount(0);
-      }
-    }
-
-    loadConversations();
-  }, [isAuthenticated]);
-
   async function handleLogout() {
     await logout();
     setUserMenuOpen(false);
@@ -105,19 +84,19 @@ export default function Navbar() {
               <ZelligeStar className="w-5 h-5 text-[#F5F0E8]" />
             </span>
             <span
-              className="text-2xl text-[#1C2520] tracking-tight"
+              className="text-xl text-[#1C2520] tracking-tight"
               style={{ fontFamily: "'Fraunces', serif", fontWeight: 600 }}
             >
               DarImmo
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-9">
+          <nav className="hidden md:flex items-center gap-7">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.label}
                 to={link.href}
-                className="text-[15px] text-[#3F4A43] hover:text-[#047857] transition-colors duration-200"
+                className="text-sm text-[#3F4A43] hover:text-[#047857] transition-colors duration-200"
               >
                 {link.label}
               </Link>
@@ -131,23 +110,17 @@ export default function Navbar() {
       {/* Messages */}
       <Link
         to="/messages"
-        className="relative w-10 h-10 rounded-full flex items-center justify-center text-[#3F4A43] hover:bg-[#F5F0E8] transition-all duration-200"
+        className="relative w-9 h-9 rounded-full flex items-center justify-center text-[#3F4A43] hover:bg-[#F5F0E8] transition-all duration-200"
       >
-        <MessageCircle size={19} />
-
-        {messageCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#047857] text-white text-[10px] font-semibold flex items-center justify-center shadow">
-            {messageCount > 9 ? "9+" : messageCount}
-          </span>
-        )}
+        <MessageCircle size={18} />
       </Link>
 
       {/* Notifications */}
       <Link
         to="/notifications"
-        className="relative w-10 h-10 rounded-full flex items-center justify-center text-[#3F4A43] hover:bg-[#F5F0E8] transition-all duration-200"
+        className="relative w-9 h-9 rounded-full flex items-center justify-center text-[#3F4A43] hover:bg-[#F5F0E8] transition-all duration-200"
       >
-        <Bell size={19} />
+        <Bell size={18} />
 
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#C2622D] text-white text-[10px] font-semibold flex items-center justify-center shadow">
@@ -162,7 +135,7 @@ export default function Navbar() {
           onClick={() => setUserMenuOpen((v) => !v)}
           className="flex items-center gap-3 rounded-full pl-1 pr-3 py-1.5 border border-transparent hover:border-[#E6DFD0] hover:bg-white transition-all duration-200 shadow-sm"
         >
-          <span className="w-10 h-10 rounded-full bg-gradient-to-br from-[#047857] to-[#0F766E] text-white font-semibold flex items-center justify-center shadow">
+          <span className="w-9 h-9 rounded-full bg-gradient-to-br from-[#047857] to-[#0F766E] text-white text-sm font-semibold flex items-center justify-center shadow">
             {initials(user?.first_name, user?.last_name) ||
               user?.username?.charAt(0)?.toUpperCase()}
           </span>
@@ -185,25 +158,25 @@ export default function Navbar() {
           />
         </button>
                   {userMenuOpen && (
-  <div className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl border border-[#E6DFD0] shadow-2xl overflow-hidden z-50 animate-fade-in">
+  <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-xl border border-[#E6DFD0] shadow-lg overflow-hidden z-50 animate-fade-in">
 
     {/* Header */}
-    <div className="px-5 py-5 bg-gradient-to-r from-[#047857] to-[#0F766E] text-white">
+    <div className="px-4 py-3 bg-gradient-to-r from-[#047857] to-[#0F766E] text-white">
       <div className="flex items-center gap-3">
 
-        <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
+        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">
           {initials(user?.first_name, user?.last_name) ||
             user?.username?.charAt(0)?.toUpperCase()}
         </div>
 
         <div className="min-w-0">
-          <p className="font-semibold truncate">
+          <p className="text-sm font-semibold truncate">
             {user?.first_name
               ? `${user.first_name} ${user.last_name}`
               : user?.username}
           </p>
 
-          <p className="text-sm text-white/80 truncate">
+          <p className="text-xs text-white/80 truncate">
             {user?.email}
           </p>
         </div>
@@ -217,54 +190,48 @@ export default function Navbar() {
       <Link
         to={dashboardPath}
         onClick={() => setUserMenuOpen(false)}
-        className="flex items-center gap-3 px-5 py-3 hover:bg-[#F5F0E8] transition-colors"
+        className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-[#F5F0E8] transition-colors"
       >
-        <LayoutDashboard size={18} />
+        <LayoutDashboard size={16} />
         <span>Tableau de bord</span>
       </Link>
 
       <Link
         to="/profil"
         onClick={() => setUserMenuOpen(false)}
-        className="flex items-center gap-3 px-5 py-3 hover:bg-[#F5F0E8] transition-colors"
+        className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-[#F5F0E8] transition-colors"
       >
-        <User size={18} />
+        <User size={16} />
         <span>Mon profil</span>
       </Link>
 
       <Link
         to="/favoris"
         onClick={() => setUserMenuOpen(false)}
-        className="flex items-center gap-3 px-5 py-3 hover:bg-[#F5F0E8] transition-colors"
+        className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-[#F5F0E8] transition-colors"
       >
-        <Heart size={18} />
+        <Heart size={16} />
         <span>Mes favoris</span>
       </Link>
 
       <Link
         to="/messages"
         onClick={() => setUserMenuOpen(false)}
-        className="flex items-center justify-between px-5 py-3 hover:bg-[#F5F0E8] transition-colors"
+        className="flex items-center justify-between px-4 py-2 text-sm hover:bg-[#F5F0E8] transition-colors"
       >
         <div className="flex items-center gap-3">
-          <MessageCircle size={18} />
+          <MessageCircle size={16} />
           <span>Messages</span>
         </div>
-
-        {messageCount > 0 && (
-          <span className="px-2 py-0.5 rounded-full bg-[#047857] text-white text-xs">
-            {messageCount}
-          </span>
-        )}
       </Link>
 
       <Link
         to="/notifications"
         onClick={() => setUserMenuOpen(false)}
-        className="flex items-center justify-between px-5 py-3 hover:bg-[#F5F0E8] transition-colors"
+        className="flex items-center justify-between px-4 py-2 text-sm hover:bg-[#F5F0E8] transition-colors"
       >
         <div className="flex items-center gap-3">
-          <Bell size={18} />
+          <Bell size={16} />
           <span>Notifications</span>
         </div>
 
@@ -279,9 +246,9 @@ export default function Navbar() {
 
       <button
         onClick={handleLogout}
-        className="w-full flex items-center gap-3 px-5 py-3 text-red-600 hover:bg-red-50 transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
       >
-        <LogOut size={18} />
+        <LogOut size={16} />
         <span>Déconnexion</span>
       </button>
 
@@ -293,7 +260,7 @@ export default function Navbar() {
             ) : (
               <Link
                 to="/connexion"
-                className="px-5 py-2.5 rounded-full bg-[#047857] text-white text-[15px] font-medium hover:bg-[#035f46] transition-colors duration-200 shadow-sm"
+                className="px-4 py-2 rounded-full bg-[#047857] text-white text-sm font-medium hover:bg-[#035f46] transition-colors duration-200 shadow-sm"
               >
                 Connexion / Inscription
               </Link>
@@ -314,23 +281,23 @@ export default function Navbar() {
   <div className="md:hidden border-t border-[#E6DFD0] bg-[#FFFBF5]">
 
     {isAuthenticated && (
-      <div className="px-5 py-5 border-b border-[#E6DFD0]">
+      <div className="px-5 py-4 border-b border-[#E6DFD0]">
 
         <div className="flex items-center gap-3">
 
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#047857] to-[#0F766E] text-white flex items-center justify-center font-semibold">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#047857] to-[#0F766E] text-white flex items-center justify-center text-sm font-semibold">
             {initials(user?.first_name, user?.last_name) ||
               user?.username?.charAt(0)?.toUpperCase()}
           </div>
 
           <div className="min-w-0">
-            <p className="font-semibold text-[#1C2520] truncate">
+            <p className="text-sm font-semibold text-[#1C2520] truncate">
               {user?.first_name
                 ? `${user.first_name} ${user.last_name}`
                 : user?.username}
             </p>
 
-            <p className="text-sm text-[#8C9189] truncate">
+            <p className="text-xs text-[#8C9189] truncate">
               {user?.email}
             </p>
           </div>
@@ -340,14 +307,14 @@ export default function Navbar() {
       </div>
     )}
 
-    <div className="px-5 py-4 space-y-1">
+    <div className="px-5 py-3 space-y-1">
 
       {NAV_LINKS.map((link) => (
         <Link
           key={link.label}
           to={link.href}
           onClick={() => setOpen(false)}
-          className="block rounded-xl px-4 py-3 text-[#3F4A43] hover:bg-[#F5F0E8] transition"
+          className="block rounded-lg px-3 py-2.5 text-sm text-[#3F4A43] hover:bg-[#F5F0E8] transition"
         >
           {link.label}
         </Link>
@@ -358,36 +325,30 @@ export default function Navbar() {
           <Link
             to={dashboardPath}
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-[#F5F0E8]"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-[#F5F0E8]"
           >
-            <LayoutDashboard size={18} />
+            <LayoutDashboard size={16} />
             Tableau de bord
           </Link>
 
           <Link
             to="/messages"
             onClick={() => setOpen(false)}
-            className="flex items-center justify-between rounded-xl px-4 py-3 hover:bg-[#F5F0E8]"
+            className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm hover:bg-[#F5F0E8]"
           >
             <div className="flex items-center gap-3">
-              <MessageCircle size={18} />
+              <MessageCircle size={16} />
               Messages
             </div>
-
-            {messageCount > 0 && (
-              <span className="px-2 py-1 rounded-full bg-[#047857] text-white text-xs">
-                {messageCount}
-              </span>
-            )}
           </Link>
 
           <Link
             to="/notifications"
             onClick={() => setOpen(false)}
-            className="flex items-center justify-between rounded-xl px-4 py-3 hover:bg-[#F5F0E8]"
+            className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm hover:bg-[#F5F0E8]"
           >
             <div className="flex items-center gap-3">
-              <Bell size={18} />
+              <Bell size={16} />
               Notifications
             </div>
 
@@ -401,26 +362,26 @@ export default function Navbar() {
           <Link
             to="/favoris"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-[#F5F0E8]"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-[#F5F0E8]"
           >
-            <Heart size={18} />
+            <Heart size={16} />
             Mes favoris
           </Link>
 
           <Link
             to="/profil"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-4 py-3 hover:bg-[#F5F0E8]"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-[#F5F0E8]"
           >
-            <User size={18} />
+            <User size={16} />
             Mon profil
           </Link>
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-red-600 hover:bg-red-50 transition"
+            className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
             Déconnexion
           </button>
         </>
@@ -428,7 +389,7 @@ export default function Navbar() {
         <Link
           to="/connexion"
           onClick={() => setOpen(false)}
-          className="block mt-4 w-full text-center rounded-full bg-[#047857] py-3 text-white font-medium hover:bg-[#03654A] transition"
+          className="block mt-3 w-full text-center rounded-full bg-[#047857] py-2 text-sm text-white font-medium hover:bg-[#03654A] transition"
         >
           Connexion / Inscription
         </Link>

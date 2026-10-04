@@ -129,5 +129,10 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="tout-marquer-lu")
     def tout_marquer_lu(self, request):
-        self.get_queryset().filter(is_read=False).update(is_read=True)
+        # Pas de filtre booléen dans la requête ORM (non supporté par Djongo) :
+        # les notifications non lues sont sélectionnées en Python.
+        for notif in self.get_queryset():
+            if not notif.is_read:
+                notif.is_read = True
+                notif.save(update_fields=["is_read"])
         return Response({"detail": "Toutes les notifications ont été marquées comme lues."})

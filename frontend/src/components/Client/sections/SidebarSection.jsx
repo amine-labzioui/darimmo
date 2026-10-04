@@ -4,8 +4,9 @@ import {
   Heart,
   CalendarDays,
   Eye,
-  BadgeCheck,
 } from "lucide-react";
+
+import { formatDate } from "../../../utils/formatters";
 
 export default function SidebarSection({
   annonce,
@@ -13,18 +14,20 @@ export default function SidebarSection({
   onContact,
   onVisit,
 }) {
+  const publishedDate = annonce.published_at || annonce.created_at;
+
   return (
     <aside className="sticky top-24 h-fit">
 
-      <div className="overflow-hidden rounded-[34px] bg-white border border-[#ECE7DD] shadow-2xl">
+      <div className="overflow-hidden rounded-xl bg-white border border-[#ECE7DD] shadow-sm">
 
         {/* HEADER */}
 
-        <div className="bg-gradient-to-r from-[#047857] to-[#0F766E] p-8 text-white">
+        <div className="bg-gradient-to-r from-[#047857] to-[#0F766E] p-5 text-white">
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
 
-            <div className="h-16 w-16 rounded-full bg-white flex items-center justify-center text-[#047857] text-2xl font-bold shadow-lg">
+            <div className="h-11 w-11 rounded-full bg-white flex items-center justify-center text-[#047857] text-lg font-bold shadow-sm">
 
               {annonce.owner_name?.charAt(0).toUpperCase()}
 
@@ -32,19 +35,11 @@ export default function SidebarSection({
 
             <div>
 
-              <h3 className="text-xl font-bold">
+              <h3 className="text-base font-semibold">
 
                 {annonce.owner_name}
 
               </h3>
-
-              <div className="mt-2 flex items-center gap-2 text-sm">
-
-                <BadgeCheck size={16} />
-
-                <span>Agent vérifié</span>
-
-              </div>
 
             </div>
 
@@ -54,14 +49,14 @@ export default function SidebarSection({
 
         {/* CONTACT */}
 
-        <div className="p-8">
+        <div className="p-5">
 
-          <div className="space-y-5">
+          <div className="space-y-2.5 text-sm">
 
             <div className="flex items-center gap-3">
 
               <Phone
-                size={18}
+                size={16}
                 className="text-[#047857]"
               />
 
@@ -72,7 +67,7 @@ export default function SidebarSection({
             <div className="flex items-center gap-3">
 
               <Mail
-                size={18}
+                size={16}
                 className="text-[#047857]"
               />
 
@@ -91,11 +86,11 @@ export default function SidebarSection({
           <button
             onClick={onContact}
             className="
-              mt-8
+              mt-5
               w-full
-              rounded-2xl
+              rounded-lg
               bg-[#047857]
-              py-4
+              py-2 text-sm
               text-white
               font-semibold
               hover:bg-[#03644d]
@@ -108,12 +103,12 @@ export default function SidebarSection({
           <button
             onClick={onVisit}
             className="
-              mt-4
+              mt-2.5
               w-full
-              rounded-2xl
+              rounded-lg
               border
               border-[#047857]
-              py-4
+              py-2 text-sm
               font-semibold
               text-[#047857]
               hover:bg-[#F4FBF8]
@@ -126,19 +121,19 @@ export default function SidebarSection({
           <button
             onClick={onFavorite}
             className="
-              mt-4
+              mt-2.5
               w-full
-              rounded-2xl
+              rounded-lg
               border
               border-[#ECE7DD]
-              py-4
+              py-2 text-sm
               hover:bg-[#FAF8F3]
               transition
             "
           >
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-2">
 
-              <Heart size={18} />
+              <Heart size={16} />
 
               Ajouter aux favoris
 
@@ -148,19 +143,21 @@ export default function SidebarSection({
 
           {/* INFOS */}
 
-          <div className="mt-10 border-t border-[#ECE7DD] pt-8 space-y-6">
+          <div className="mt-5 border-t border-[#ECE7DD] pt-5 space-y-3 text-sm">
 
-            <div className="flex justify-between">
+            {publishedDate && (
+              <div className="flex justify-between">
 
-              <span className="text-[#6B7280]">
-                Publié
-              </span>
+                <span className="text-[#6B7280]">
+                  Publié
+                </span>
 
-              <strong>
-                27 Juin 2026
-              </strong>
+                <strong>
+                  {formatDate(publishedDate)}
+                </strong>
 
-            </div>
+              </div>
+            )}
 
             <div className="flex justify-between">
 
@@ -180,7 +177,7 @@ export default function SidebarSection({
 
               <div className="flex items-center gap-2 text-[#6B7280]">
 
-                <Eye size={17} />
+                <Eye size={14} />
 
                 Vues
 

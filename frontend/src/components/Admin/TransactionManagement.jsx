@@ -62,18 +62,18 @@ const pendingCount = transactions.filter(
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-5">
 
     <div>
 
         <h1
-            className="text-3xl font-semibold text-[#1C2520]"
+            className="text-2xl font-semibold text-[#1C2520]"
             style={{ fontFamily: "'Fraunces', serif" }}
         >
             Transactions
         </h1>
 
-        <p className="text-[#6B7280] mt-1">
+        <p className="text-[#6B7280] text-sm mt-1">
             Historique des paiements Premium
         </p>
 
@@ -81,91 +81,91 @@ const pendingCount = transactions.filter(
 
 </div>
 
-<div className="grid grid-cols-4 gap-5 mb-8">
+<div className="grid grid-cols-4 gap-4 mb-6">
 
-    <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
+    <div className="bg-white rounded-xl border border-[#E5E7EB] p-4">
 
         <div className="flex justify-between">
 
             <div>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-xs text-gray-500">
                     Revenu
                 </p>
 
-                <h2 className="text-2xl font-bold text-[#047857] mt-2">
+                <h2 className="text-2xl font-bold text-[#047857] mt-1">
                     {formatPrice(totalRevenue)} MAD
                 </h2>
 
             </div>
 
-            <DollarSign className="text-[#047857]" />
+            <DollarSign size={20} className="text-[#047857]" />
 
         </div>
 
     </div>
 
-    <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
+    <div className="bg-white rounded-xl border border-[#E5E7EB] p-4">
 
         <div className="flex justify-between">
 
             <div>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-xs text-gray-500">
                     Transactions
                 </p>
 
-                <h2 className="text-2xl font-bold mt-2">
+                <h2 className="text-2xl font-bold mt-1">
                     {transactions.length}
                 </h2>
 
             </div>
 
-            <CreditCard className="text-[#047857]" />
+            <CreditCard size={20} className="text-[#047857]" />
 
         </div>
 
     </div>
 
-    <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
+    <div className="bg-white rounded-xl border border-[#E5E7EB] p-4">
 
         <div className="flex justify-between">
 
             <div>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-xs text-gray-500">
                     Réussies
                 </p>
 
-                <h2 className="text-2xl font-bold text-green-600 mt-2">
+                <h2 className="text-2xl font-bold text-green-600 mt-1">
                     {successCount}
                 </h2>
 
             </div>
 
-            <CheckCircle2 className="text-green-600" />
+            <CheckCircle2 size={20} className="text-green-600" />
 
         </div>
 
     </div>
 
-    <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5">
+    <div className="bg-white rounded-xl border border-[#E5E7EB] p-4">
 
         <div className="flex justify-between">
 
             <div>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-xs text-gray-500">
                     En attente
                 </p>
 
-                <h2 className="text-2xl font-bold text-amber-500 mt-2">
+                <h2 className="text-2xl font-bold text-amber-500 mt-1">
                     {pendingCount}
                 </h2>
 
             </div>
 
-            <Clock3 className="text-amber-500" />
+            <Clock3 size={20} className="text-amber-500" />
 
         </div>
 
@@ -173,30 +173,30 @@ const pendingCount = transactions.filter(
 
 </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-[#E5E7EB] overflow-hidden">
-        <table className="w-full text-left min-w-[700px]">
+      <div className="bg-white rounded-xl shadow-sm border border-[#E5E7EB] overflow-hidden">
+        <table className="w-full text-left text-sm min-w-[700px]">
           <thead className="bg-[#F9FAFB]">
             <tr className="border-b border-[#E6DFD0] text-[12.5px] text-[#8C9189]">
-              <th className="px-5 py-3 font-medium">Utilisateur</th>
-              <th className="px-5 py-3 font-medium">Annonce</th>
-              <th className="px-5 py-3 font-medium">Formule</th>
-              <th className="px-5 py-3 font-medium">Fournisseur</th>
-              <th className="px-5 py-3 font-medium">Montant</th>
-              <th className="px-5 py-3 font-medium">Statut</th>
-              <th className="px-5 py-3 font-medium">Date</th>
+              <th className="px-4 py-2.5 font-medium">Utilisateur</th>
+              <th className="px-4 py-2.5 font-medium">Annonce</th>
+              <th className="px-4 py-2.5 font-medium">Formule</th>
+              <th className="px-4 py-2.5 font-medium">Fournisseur</th>
+              <th className="px-4 py-2.5 font-medium">Montant</th>
+              <th className="px-4 py-2.5 font-medium">Statut</th>
+              <th className="px-4 py-2.5 font-medium">Date</th>
             </tr>
           </thead>
           <tbody>
             {transactions.map((t) => (
               <tr key={t.id} className="border-b border-gray-100 hover:bg-[#FAFAFA] transition">
-                <td className="px-5 py-3.5 text-[#1C2520]">{t.user}</td>
-                <td className="px-5 py-3.5 text-[#3F4A43]">{t.annonce_title || "—"}</td>
-                <td className="px-5 py-3.5 text-[#3F4A43]">{t.boost_plan_name || "—"}</td>
-                <td className="px-5 py-3.5 text-[#3F4A43] capitalize">{t.provider}</td>
-                <td className="px-5 py-4 font-bold text-[#047857]">{formatPrice(t.amount)} MAD</td>
-                <td className="px-5 py-3.5">
+                <td className="px-4 py-2.5 text-[#1C2520]">{t.user}</td>
+                <td className="px-4 py-2.5 text-[#3F4A43]">{t.annonce_title || "—"}</td>
+                <td className="px-4 py-2.5 text-[#3F4A43]">{t.boost_plan_name || "—"}</td>
+                <td className="px-4 py-2.5 text-[#3F4A43] capitalize">{t.provider}</td>
+                <td className="px-4 py-2.5 font-semibold text-[#047857]">{formatPrice(t.amount)} MAD</td>
+                <td className="px-4 py-2.5">
                   <span
-                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold
                   ${
                   t.status==="succeeded"
                   ?"bg-green-100 text-green-700"
@@ -219,7 +219,7 @@ const pendingCount = transactions.filter(
                   {STATUS_LABELS[t.status]}
                   </span>
                 </td>
-                <td className="px-5 py-3.5 text-[#8C9189]">{formatDateTime(t.created_at)}</td>
+                <td className="px-4 py-2.5 text-[#8C9189]">{formatDateTime(t.created_at)}</td>
               </tr>
             ))}
           </tbody>
