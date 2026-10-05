@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 
 import { getMainImageUrl, isBoostActive } from "../../../utils/helpers";
+import { ANNONCE_STATUS } from "../../../utils/constants";
 
 export default function GallerySection({
   annonce,
@@ -18,6 +19,9 @@ export default function GallerySection({
 
   const isSale =
     annonce.transaction_type === "vente";
+
+  const isPublished = annonce.status === "published";
+  const statusInfo = ANNONCE_STATUS[annonce.status];
 
   return (
     <section className="max-w-7xl mx-auto px-6 pt-6">
@@ -49,15 +53,21 @@ export default function GallerySection({
 
           <div className="absolute top-4 left-4 flex gap-2">
 
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
-                isSale
-                  ? "bg-[#047857] text-white"
-                  : "bg-[#C2622D] text-white"
-              }`}
-            >
-              {isSale ? "À vendre" : "À louer"}
-            </span>
+            {isPublished ? (
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
+                  isSale
+                    ? "bg-[#047857] text-white"
+                    : "bg-[#C2622D] text-white"
+                }`}
+              >
+                {isSale ? "À vendre" : "À louer"}
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur text-xs font-semibold text-[#1C2520] shadow-sm">
+                {statusInfo?.label || annonce.status}
+              </span>
+            )}
 
             {isBoostActive(annonce) && (
               <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur text-xs font-semibold text-[#1C2520]">
@@ -69,6 +79,7 @@ export default function GallerySection({
 
           {/* ACTIONS */}
 
+          {isPublished && (
           <div className="absolute top-4 right-4 flex gap-2">
 
             <button
@@ -91,6 +102,7 @@ export default function GallerySection({
             </button>
 
           </div>
+          )}
 
           {/* PHOTOS */}
 

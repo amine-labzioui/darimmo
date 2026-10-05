@@ -1,0 +1,75 @@
+{
+  "fichier": "annotation_fidelite_finale.csv",
+  "chiffres": {
+    "oui": {
+      "n": 25,
+      "taux": 0.8064516129032258
+    },
+    "partiel": {
+      "n": 6,
+      "taux": 0.1935483870967742
+    },
+    "non": {
+      "n": 0,
+      "taux": 0.0
+    },
+    "total_annote": 31,
+    "total": 31,
+    "non_annotes": 0
+  },
+  "reponses_avec_chiffre": {
+    "oui": {
+      "n": 8,
+      "taux": 0.6153846153846154
+    },
+    "partiel": {
+      "n": 5,
+      "taux": 0.38461538461538464
+    },
+    "non": {
+      "n": 0,
+      "taux": 0.0
+    },
+    "total_annote": 13,
+    "total": 13,
+    "non_annotees": 0,
+    "par_cas": {
+      "33": "oui",
+      "34": "oui",
+      "35": "partiel",
+      "36": "oui",
+      "37": "partiel",
+      "38": "oui",
+      "39": "oui",
+      "41": "oui",
+      "42": "oui",
+      "43": "partiel",
+      "44": "partiel",
+      "45": "oui",
+      "46": "partiel"
+    }
+  },
+  "reponses_sans_chiffre": {
+    "total": 3,
+    "absence_justifiee_oui": 2,
+    "absence_justifiee_non": 1,
+    "non_annotees": 0,
+    "par_cas": {
+      "40": "non",
+      "47": "oui",
+      "48": "oui"
+    }
+  },
+  "commentaires": {
+    "35 (26 457 DH)": "libellé ambigu dans la source (titre Anfa, ligne Casablanca), non signalé par l'agent",
+    "41 (7 108 DH)": "fidèle à l'extrait, mais contradictoire avec d'autres extraits du même cas",
+    "41 (3 286 DH)": "fidèle à l'extrait, mais contradictoire avec d'autres extraits du même cas",
+    "41 (10 923 DH)": "fidèle à l'extrait, mais contradictoire avec d'autres extraits du même cas",
+    "43 (13 299 DH)": "il est ajouter villa alors que la question c\"est bombien le m² a bouskoura",
+    "44 (26 457 DH)": "libellé ambigu dans la source (titre Anfa, ligne Casablanca), non signalé par l'agent",
+    "46 (14 888 درهم)": "mots en français dans une réponse en arabe (hors note)",
+    "46 (7 901 درهم)": "borne de la fourchette présentée comme une moyenne ; mots en français dans une réponse en arabe (hors note)",
+    "46 (21 021 درهم)": "borne de la fourchette présentée comme une moyenne ; mots en français dans une réponse en arabe (hors note)",
+    "47 (sans chiffre)": "absence justifiée : les seuls chiffres disponibles venaient d'annonces individuelles (Avito), que le prompt exclut volontairement"
+  }
+}

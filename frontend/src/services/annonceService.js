@@ -51,6 +51,16 @@ export const annonceService = {
     return data;
   },
 
+  async marquerLouee(id) {
+    const { data } = await api.post(`/annonces/${id}/marquer_louee/`);
+    return data;
+  },
+
+  async archiver(id) {
+    const { data } = await api.post(`/annonces/${id}/archiver/`);
+    return data;
+  },
+
   async ajouterPhotos(id, files) {
     const formData = new FormData();
     files.forEach((file) => formData.append("images", file));

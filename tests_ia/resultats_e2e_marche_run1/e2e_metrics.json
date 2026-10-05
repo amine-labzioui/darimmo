@@ -1,0 +1,162 @@
+{
+  "run_info": {
+    "date": "2026-10-05T19:21:51",
+    "orchestrator_url": "http://localhost:5678/webhook/darimmo-ai-chat",
+    "n_messages": 18
+  },
+  "pass_rate_overall": 1.0,
+  "n_passed": 18,
+  "n_requests_needing_retry": 0,
+  "n_technical_errors": 0,
+  "technical_error_rate": 0.0,
+  "tool_call_success": {
+    "correct": 0,
+    "total": 0,
+    "rate": null
+  },
+  "no_invented_listing": {
+    "correct": 0,
+    "total": 0,
+    "rate": null
+  },
+  "exact_search_results": {
+    "correct": 0,
+    "total": 0,
+    "rate": null
+  },
+  "unauthenticated_refusal": {
+    "correct": 0,
+    "total": 0,
+    "rate": null
+  },
+  "forged_token_no_leak": {
+    "correct": 0,
+    "total": 0
+  },
+  "data_integrity": {
+    "unchanged": true,
+    "compared_fields": [
+      "public_ids"
+    ],
+    "before": {
+      "public_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        10,
+        11,
+        12
+      ]
+    },
+    "after": {
+      "public_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        10,
+        11,
+        12
+      ]
+    }
+  },
+  "latency": {
+    "mean_ms": 7119.855555555556,
+    "median_ms": 7649.15,
+    "p95_ms": 10134.2,
+    "min_ms": 1457.1,
+    "max_ms": 11893.0
+  },
+  "avg_llm_calls_per_message": 2.888888888888889,
+  "by_category": {
+    "market": {
+      "label": "Agent Marché",
+      "n": 18,
+      "passed": 18,
+      "pass_rate": 1.0,
+      "latency_mean_ms": 7119.855555555556,
+      "latency_p95_ms": 10134.2,
+      "avg_llm_calls": 2.888888888888889
+    }
+  },
+  "market": {
+    "n": 18,
+    "passed": 18,
+    "n_traites_par_agent_marche": 16,
+    "n_reponses_avec_chiffre": 13,
+    "n_requetes_reformulees": 16,
+    "n_fuites_nom_de_site_avant_nettoyage": 0,
+    "n_avec_extraits_enregistres": 16,
+    "par_verification": {
+      "reponse_valide": {
+        "correct": 18,
+        "total": 18,
+        "hors_taux": false,
+        "rate": 1.0
+      },
+      "bon_agent": {
+        "correct": 16,
+        "total": 16,
+        "hors_taux": false,
+        "rate": 1.0
+      },
+      "aucune_erreur_technique": {
+        "correct": 16,
+        "total": 16,
+        "hors_taux": false,
+        "rate": 1.0
+      },
+      "aucun_nom_de_site_ni_url": {
+        "correct": 17,
+        "total": 17,
+        "hors_taux": false,
+        "rate": 1.0
+      },
+      "chiffre_present": {
+        "correct": 6,
+        "total": 6,
+        "hors_taux": false,
+        "rate": 1.0
+      },
+      "source_citee": {
+        "correct": 13,
+        "total": 13,
+        "hors_taux": false,
+        "rate": 1.0
+      },
+      "sources_citees_autorisees": {
+        "correct": 13,
+        "total": 13,
+        "hors_taux": false,
+        "rate": 1.0
+      },
+      "langue_detectee_correcte": {
+        "correct": 16,
+        "total": 16,
+        "hors_taux": true,
+        "rate": 1.0
+      },
+      "ecriture_reponse_attendue": {
+        "correct": 17,
+        "total": 17,
+        "hors_taux": true,
+        "rate": 1.0
+      },
+      "aucun_chiffre": {
+        "correct": 2,
+        "total": 2,
+        "hors_taux": false,
+        "rate": 1.0
+      }
+    }
+  }
+}

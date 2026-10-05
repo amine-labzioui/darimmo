@@ -24,19 +24,63 @@ const STATUS_LABELS = {
   refunded: "Remboursée",
 };
 
+// L'API est paginée : on lit toutes les pages pour que les totaux
+// portent sur l'ensemble des transactions, pas sur la première page.
+async function fetchAllTransactions() {
+  const all = [];
+  let page = 1;
+  while (true) {
+    const { data } = await api.get("/payments/transactions/", { params: { page } });
+    if (!data.results) return data;
+    all.push(...data.results);
+    if (!data.next) return all;
+    page += 1;
+  }
+}
+
+const PROVIDER_LABELS = {
+  cmi: "CMI",
+  stripe: "Stripe",
+};
+
+const PAGE_SIZE = 10;
+
+const STATUS_FILTERS = [
+  { value: "all", label: "Toutes" },
+  { value: "succeeded", label: "Réussies" },
+  { value: "pending", label: "En attente" },
+  { value: "failed", label: "Échouées" },
+  { value: "refunded", label: "Remboursées" },
+];
+
 export default function TransactionManagement() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    api
-      .get("/payments/transactions/")
-      .then(({ data }) => setTransactions(data.results || data))
-      .catch(() => setTransactions([]))
+    fetchAllTransactions()
+      .then(setTransactions)
+      .catch(() => {
+        setTransactions([]);
+        setLoadError(true);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <LoadingSpinner fullPage label="Chargement des transactions…" />;
+
+  if (loadError) {
+    return (
+      <EmptyState
+        icon={CreditCard}
+        title="Chargement impossible"
+        description="Les données n'ont pas pu être chargées. Vérifiez que le serveur est démarré, puis rechargez la page."
+      />
+    );
+  }
 
   if (transactions.length === 0) {
     return (
@@ -59,6 +103,31 @@ const successCount = transactions.filter(
 const pendingCount = transactions.filter(
     (t) => t.status === "pending"
 ).length;
+
+  // Filtre et pagination côté client (toutes les transactions sont déjà chargées).
+  // « Échouées » et « Remboursées » ne sont proposés que si ce statut existe.
+  const filters = STATUS_FILTERS.filter(
+    (f) =>
+      ["all", "succeeded", "pending"].includes(f.value) ||
+      transactions.some((t) => t.status === f.value)
+  );
+
+  const filtered =
+    statusFilter === "all"
+      ? transactions
+      : transactions.filter((t) => t.status === statusFilter);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const visible = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
+  function changeFilter(value) {
+    setStatusFilter(value);
+    setPage(1);
+  }
 
   return (
     <div>
@@ -173,6 +242,22 @@ const pendingCount = transactions.filter(
 
 </div>
 
+      <div className="flex flex-wrap gap-1 mb-4 bg-white rounded-lg border border-[#E5E7EB] p-1 w-fit">
+        {filters.map((f) => (
+          <button
+            key={f.value}
+            onClick={() => changeFilter(f.value)}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              statusFilter === f.value
+                ? "bg-[#047857] text-white"
+                : "text-[#5C6961] hover:bg-[#F5F0E8]"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-[#E5E7EB] overflow-hidden">
         <table className="w-full text-left text-sm min-w-[700px]">
           <thead className="bg-[#F9FAFB]">
@@ -187,12 +272,19 @@ const pendingCount = transactions.filter(
             </tr>
           </thead>
           <tbody>
-            {transactions.map((t) => (
+            {visible.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-6 text-center text-[#8C9189]">
+                  Aucune transaction pour ce statut.
+                </td>
+              </tr>
+            )}
+            {visible.map((t) => (
               <tr key={t.id} className="border-b border-gray-100 hover:bg-[#FAFAFA] transition">
                 <td className="px-4 py-2.5 text-[#1C2520]">{t.user}</td>
                 <td className="px-4 py-2.5 text-[#3F4A43]">{t.annonce_title || "—"}</td>
                 <td className="px-4 py-2.5 text-[#3F4A43]">{t.boost_plan_name || "—"}</td>
-                <td className="px-4 py-2.5 text-[#3F4A43] capitalize">{t.provider}</td>
+                <td className="px-4 py-2.5 text-[#3F4A43]">{PROVIDER_LABELS[t.provider] || t.provider}</td>
                 <td className="px-4 py-2.5 font-semibold text-[#047857]">{formatPrice(t.amount)} MAD</td>
                 <td className="px-4 py-2.5">
                   <span
@@ -224,6 +316,28 @@ const pendingCount = transactions.filter(
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex items-center justify-between mt-4 text-sm text-[#5C6961]">
+        <span>
+          {filtered.length} transaction(s) · Page {currentPage} sur {pageCount}
+        </span>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPage(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className="px-3 py-1.5 rounded-lg border border-[#E5E7EB] bg-white font-medium hover:bg-[#F5F0E8] disabled:opacity-50 disabled:hover:bg-white"
+          >
+            Précédent
+          </button>
+          <button
+            onClick={() => setPage(currentPage + 1)}
+            disabled={currentPage >= pageCount}
+            className="px-3 py-1.5 rounded-lg border border-[#E5E7EB] bg-white font-medium hover:bg-[#F5F0E8] disabled:opacity-50 disabled:hover:bg-white"
+          >
+            Suivant
+          </button>
+        </div>
       </div>
     </div>
   );

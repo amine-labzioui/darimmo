@@ -44,6 +44,11 @@ export const PROPERTY_TYPES = [
   { value: "terrain", label: "Terrain" },
 ];
 
+// Libellé d'un type de bien ("appartement" → "Appartement").
+export function getPropertyTypeLabel(value) {
+  return PROPERTY_TYPES.find((t) => t.value === value)?.label || value;
+}
+
 export const TRANSACTION_TYPES = [
   { value: "vente", label: "À Vendre" },
   { value: "location", label: "À Louer" },

@@ -44,6 +44,7 @@ class AdminStatsView(APIView):
             "annonces_pending": Annonce.objects.filter(status=Annonce.Status.PENDING).count(),
             "annonces_sold": Annonce.objects.filter(status=Annonce.Status.SOLD).count(),
             "annonces_rented": Annonce.objects.filter(status=Annonce.Status.RENTED).count(),
+            "annonces_archived": Annonce.objects.filter(status=Annonce.Status.ARCHIVED).count(),
             "total_views": Annonce.objects.aggregate(total=Sum("views_count"))["total"] or 0,
             "visit_requests_count": VisitRequest.objects.count(),
             "visit_pending_count": VisitRequest.objects.filter(status="pending").count(),
@@ -105,21 +106,7 @@ class AdminAnnonceModerationViewSet(viewsets.ModelViewSet):
     POST  /api/admin-dashboard/annonces/{id}/rejeter/
     """
 
-    queryset = (
-        Annonce.objects.filter(status=Annonce.Status.PUBLISHED)
-        .annotate(
-            boost_order=Case(
-                When(is_boosted=True, then=0),
-                default=1,
-                output_field=IntegerField(),
-            )
-        )
-        .order_by(
-            "boost_order",
-            "-is_featured",
-            "-created_at",
-        )
-    )
+    queryset = Annonce.objects.all().order_by("-created_at")
 
     serializer_class = AdminAnnonceSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminRole]

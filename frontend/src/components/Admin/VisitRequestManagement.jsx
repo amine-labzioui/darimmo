@@ -6,12 +6,25 @@ import {
   Calendar,
 } from "lucide-react";
 import api from "../../services/api";
+import { useNotification } from "../../hooks/useNotification";
+import { formatDateTime } from "../../utils/formatters";
 import LoadingSpinner from "../Shared/LoadingSpinner";
 import EmptyState from "../Shared/EmptyState";
 
+// Libellés identiques à ceux du modèle VisitRequest du backend.
+const STATUS_INFO = {
+  pending: { label: "En attente", badgeClass: "bg-yellow-100 text-yellow-700" },
+  accepted: { label: "Acceptée", badgeClass: "bg-green-100 text-green-700" },
+  rescheduled: { label: "Nouvelle date proposée", badgeClass: "bg-blue-100 text-blue-700" },
+  refused: { label: "Refusée", badgeClass: "bg-red-100 text-red-700" },
+  completed: { label: "Effectuée", badgeClass: "bg-gray-100 text-gray-700" },
+};
+
 export default function VisitRequestManagement() {
+  const { pushToast } = useNotification();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -24,9 +37,11 @@ export default function VisitRequestManagement() {
       );
 
       setRequests(data.results || data);
+      setLoadError(false);
     } catch (err) {
       console.error(err);
       setRequests([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -38,10 +53,11 @@ export default function VisitRequestManagement() {
     async function acceptVisit(id) {
     try {
       await api.post(`/admin-dashboard/visit-requests/${id}/accept/`);
+      pushToast({ type: "success", title: "Demande acceptée" });
       loadRequests();
     } catch (err) {
       console.error(err);
-      alert("Impossible d'accepter la demande.");
+      pushToast({ type: "error", title: "Impossible d'accepter la demande" });
     }
   }
 
@@ -50,10 +66,11 @@ export default function VisitRequestManagement() {
 
     try {
       await api.post(`/admin-dashboard/visit-requests/${id}/refuse/`);
+      pushToast({ type: "success", title: "Demande refusée" });
       loadRequests();
     } catch (err) {
       console.error(err);
-      alert("Impossible de refuser la demande.");
+      pushToast({ type: "error", title: "Impossible de refuser la demande" });
     }
   }
 
@@ -76,10 +93,11 @@ export default function VisitRequestManagement() {
 
       setShowModal(false);
       setSelectedRequest(null);
+      pushToast({ type: "success", title: "Nouvelle date proposée" });
       loadRequests();
     } catch (err) {
       console.error(err);
-      alert("Impossible de modifier la date.");
+      pushToast({ type: "error", title: "Impossible de modifier la date" });
     }
   }
 
@@ -88,6 +106,16 @@ export default function VisitRequestManagement() {
       <LoadingSpinner
         fullPage
         label="Chargement des demandes de visite..."
+      />
+    );
+  }
+
+  if (loadError) {
+    return (
+      <EmptyState
+        icon={CalendarCheck}
+        title="Chargement impossible"
+        description="Les données n'ont pas pu être chargées. Vérifiez que le serveur est démarré, puis rechargez la page."
       />
     );
   }
@@ -141,7 +169,7 @@ export default function VisitRequestManagement() {
                   <p className="text-sm mt-2">
                     <strong>Date souhaitée :</strong>
                     <br />
-                    {new Date(req.requested_date).toLocaleString()}
+                    {formatDateTime(req.requested_date)}
                   </p>
 
                   {req.owner_message && (
@@ -155,18 +183,11 @@ export default function VisitRequestManagement() {
 
                   <div className="mt-3">
                     <span
-                      className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold
-                        ${
-                          req.status === "pending"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : req.status === "accepted"
-                            ? "bg-green-100 text-green-700"
-                            : req.status === "rescheduled"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
+                      className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
+                        STATUS_INFO[req.status]?.badgeClass || "bg-gray-100 text-gray-700"
+                      }`}
                     >
-                      {req.status}
+                      {STATUS_INFO[req.status]?.label || req.status}
                     </span>
                   </div>
 

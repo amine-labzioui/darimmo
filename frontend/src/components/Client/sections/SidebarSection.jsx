@@ -51,6 +51,7 @@ export default function SidebarSection({
 
         <div className="p-5">
 
+          {annonce.status === "published" && (
           <div className="space-y-2.5 text-sm">
 
             <div className="flex items-center gap-3">
@@ -80,9 +81,12 @@ export default function SidebarSection({
             </div>
 
           </div>
+          )}
 
           {/* BUTTONS */}
 
+          {annonce.status === "published" && (
+          <>
           <button
             onClick={onContact}
             className="
@@ -140,10 +144,16 @@ export default function SidebarSection({
             </div>
 
           </button>
+          </>
+          )}
 
           {/* INFOS */}
 
-          <div className="mt-5 border-t border-[#ECE7DD] pt-5 space-y-3 text-sm">
+          <div
+            className={`space-y-3 text-sm ${
+              annonce.status === "published" ? "mt-5 border-t border-[#ECE7DD] pt-5" : ""
+            }`}
+          >
 
             {publishedDate && (
               <div className="flex justify-between">

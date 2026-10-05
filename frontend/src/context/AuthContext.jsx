@@ -17,8 +17,9 @@ export function AuthProvider({ children }) {
         try {
           const profile = await authService.getProfile();
           setUser(profile);
-        } catch {
-          setUser(null);
+        } catch (err) {
+          // Panne du serveur (pas de réponse) : on garde la session locale.
+          if (err.response?.status === 401) setUser(null);
         }
       }
       setLoading(false);

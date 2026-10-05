@@ -6,7 +6,8 @@ import {
   Building2,
 } from "lucide-react";
 
-import { formatPriceWithCurrency } from "../../../utils/formatters";
+import { formatPriceWithCurrency, formatSurface } from "../../../utils/formatters";
+import { getPropertyTypeLabel } from "../../../utils/constants";
 import { isBoostActive } from "../../../utils/helpers";
 
 function StatCard({ icon: Icon, value, label }) {
@@ -130,13 +131,13 @@ export default function HeaderSection({ annonce }) {
 
           <StatCard
             icon={Maximize}
-            value={`${annonce.surface} m²`}
+            value={formatSurface(annonce.surface)}
             label="Surface"
           />
 
           <StatCard
             icon={Building2}
-            value={annonce.property_type}
+            value={getPropertyTypeLabel(annonce.property_type)}
             label="Type"
           />
 

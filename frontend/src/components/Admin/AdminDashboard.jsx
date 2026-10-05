@@ -12,7 +12,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recha
 import { analyticsService } from "../../services/analyticsService";
 import LoadingSpinner from "../Shared/LoadingSpinner";
 
-const COLORS = ["#047857", "#C2622D", "#0B7EA3", "#E8A020"];
+const COLORS = ["#047857", "#C2622D", "#0B7EA3", "#E8A020", "#8C9189"];
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -78,6 +78,7 @@ export default function AdminDashboard() {
     { name: "En attente", value: stats.annonces_pending },
     { name: "Vendues", value: stats.annonces_sold },
     { name: "Louées", value: stats.annonces_rented },
+    { name: "Archivées", value: stats.annonces_archived ?? 0 },
   ];
 
   return (
@@ -88,21 +89,21 @@ export default function AdminDashboard() {
       >
         Tableau de bord administrateur
       </h1>
-      <p className="text-[#5C6961] text-sm mb-7">Vue d'ensemble de la plateforme DarImmo</p>
+      <p className="text-[#5C6961] text-sm mb-6">Vue d'ensemble de la plateforme DarImmo</p>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {cards.map((card) => (
-          <div key={card.label} className="bg-white rounded-2xl border border-[#E6DFD0] p-5">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: `${card.color}1A` }}>
-              <card.icon size={19} style={{ color: card.color }} />
+          <div key={card.label} className="bg-white rounded-xl border border-[#E6DFD0] shadow-sm p-4">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-2.5" style={{ backgroundColor: `${card.color}1A` }}>
+              <card.icon size={16} style={{ color: card.color }} />
             </div>
             <p className="text-2xl font-semibold text-[#1C2520]">{card.value}</p>
-            <p className="text-[13px] text-[#5C6961] mt-0.5">{card.label}</p>
+            <p className="text-sm text-[#5C6961] mt-0.5">{card.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-6">
+      <div className="grid sm:grid-cols-2 gap-4">
         <ChartCard title="Répartition des utilisateurs" data={userPieData} />
         <ChartCard title="Statut des annonces" data={annoncePieData} />
       </div>
@@ -110,19 +111,48 @@ export default function AdminDashboard() {
   );
 }
 
-function ChartCard({ title, data }) {
+// Étiquette et trait d'une part du graphique : rien pour une part à 0.
+function renderSliceLabel({ x, y, value, fill, textAnchor }) {
+  if (!value) return null;
   return (
-    <div className="bg-white rounded-2xl border border-[#E6DFD0] p-6">
-      <h2 className="text-[15px] font-medium text-[#1C2520] mb-4">{title}</h2>
-      <ResponsiveContainer width="100%" height={260}>
+    <text x={x} y={y} fill={fill} textAnchor={textAnchor} dominantBaseline="central" fontSize={12}>
+      {value}
+    </text>
+  );
+}
+
+function renderSliceLabelLine({ points, stroke, value }) {
+  if (!value || !points) return null;
+  const [start, end] = points;
+  return <path d={`M${start.x},${start.y}L${end.x},${end.y}`} stroke={stroke} fill="none" />;
+}
+
+function ChartCard({ title, data }) {
+  // Chaque entrée garde sa couleur ; les parts à 0 ne sont pas dessinées,
+  // mais la légende liste toutes les entrées.
+  const colored = data.map((entry, index) => ({
+    ...entry,
+    fill: COLORS[index % COLORS.length],
+  }));
+  const slices = colored.filter((entry) => entry.value > 0);
+  const legendPayload = colored.map((entry) => ({
+    value: entry.name,
+    type: "rect",
+    color: entry.fill,
+  }));
+
+  return (
+    <div className="bg-white rounded-xl border border-[#E6DFD0] shadow-sm p-5">
+      <h2 className="text-base font-semibold text-[#1C2520] mb-3">{title}</h2>
+      <ResponsiveContainer width="100%" height={220}>
         <PieChart>
-          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85} label>
-            {data.map((_, index) => (
-              <Cell key={index} fill={COLORS[index % COLORS.length]} />
+          <Pie data={slices} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={renderSliceLabel} labelLine={renderSliceLabelLine}>
+            {slices.map((entry) => (
+              <Cell key={entry.name} fill={entry.fill} stroke="none" />
             ))}
           </Pie>
           <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #E6DFD0", fontSize: 13 }} />
-          <Legend wrapperStyle={{ fontSize: 12 }} />
+          <Legend payload={legendPayload} wrapperStyle={{ fontSize: 12 }} />
         </PieChart>
       </ResponsiveContainer>
     </div>

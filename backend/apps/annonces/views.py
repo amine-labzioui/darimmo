@@ -63,7 +63,10 @@ class AnnonceViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:
             return [permissions.AllowAny()]
-        if self.action in ["update", "partial_update", "destroy", "publier"]:
+        if self.action in [
+            "update", "partial_update", "destroy", "publier",
+            "marquer_vendue", "marquer_louee", "archiver",
+        ]:
             return [permissions.IsAuthenticated(), IsOwnerOrAdmin()]
         return [permissions.IsAuthenticated()]
 
@@ -162,9 +165,33 @@ class AnnonceViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def marquer_vendue(self, request, pk=None):
         annonce = self.get_object()
+        if annonce.transaction_type != Annonce.TransactionType.VENTE:
+            return Response(
+                {"detail": "Seule une annonce de vente peut être marquée comme vendue."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         annonce.status = Annonce.Status.SOLD
         annonce.save(update_fields=["status"])
         return Response({"detail": "Annonce marquée comme vendue."})
+
+    @action(detail=True, methods=["post"])
+    def marquer_louee(self, request, pk=None):
+        annonce = self.get_object()
+        if annonce.transaction_type != Annonce.TransactionType.LOCATION:
+            return Response(
+                {"detail": "Seule une annonce de location peut être marquée comme louée."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        annonce.status = Annonce.Status.RENTED
+        annonce.save(update_fields=["status"])
+        return Response({"detail": "Annonce marquée comme louée."})
+
+    @action(detail=True, methods=["post"])
+    def archiver(self, request, pk=None):
+        annonce = self.get_object()
+        annonce.status = Annonce.Status.ARCHIVED
+        annonce.save(update_fields=["status"])
+        return Response({"detail": "Annonce archivée."})
 
     @action(
         detail=True, methods=["post"], parser_classes=None,

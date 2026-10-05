@@ -8,7 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { formatPriceWithCurrency } from "../../utils/formatters";
+import { formatPriceWithCurrency, formatSurface } from "../../utils/formatters";
 import { getMainImageUrl, isBoostActive } from "../../utils/helpers";
 
 export default function AnnonceCard({
@@ -226,7 +226,7 @@ export default function AnnonceCard({
               />
 
               <div className="mt-1 text-sm font-semibold">
-                {annonce.surface || "--"}
+                {annonce.surface ? formatSurface(annonce.surface) : "--"}
               </div>
 
             </div>

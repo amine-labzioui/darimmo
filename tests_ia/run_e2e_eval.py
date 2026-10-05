@@ -32,6 +32,18 @@ Utilisation (depuis tests_ia, venv de Django) :
     python run_e2e_eval.py --only search                          # une catégorie
     python run_e2e_eval.py                                        # tout (32 messages)
     python run_e2e_eval.py --reset                                # repart de zéro
+    python run_e2e_eval.py --only market --results-dir resultats_e2e_marche_run1   # Agent Marché seul, dossier séparé
+
+Agent Marché (catégorie "market")
+---------------------------------
+Les questions de prix au m² passent par l'Agent Marché (reformulation ->
+recherche web -> synthèse). Vérifications automatiques : bon agent, pas
+d'erreur technique, présence ou absence d'un chiffre selon le cas, source
+citée quand un chiffre est donné, sources issues des domaines autorisés,
+aucun nom de site ni URL dans la réponse. La fidélité des chiffres aux
+extraits n'est PAS vérifiée automatiquement : les extraits lus par le modèle
+(`sources_extraits`) et la réponse brute (`raw_reply`) sont enregistrés pour
+une annotation manuelle. La langue est mesurée mais ne compte pas dans le taux.
 
 Variables d'environnement :
     ORCHESTRATOR_URL  webhook de production (défaut http://localhost:5678/webhook/darimmo-ai-chat)
@@ -83,8 +95,22 @@ CATEGORY_LABELS = {
     "security_forged": "Faux jeton",
     "faq": "FAQ (RAG)",
     "out_of_scope": "Hors périmètre",
+    "market": "Agent Marché",
 }
 TOOL_CATEGORIES = ("search", "my_listings", "payment")  # catégories où un appel d'outil est attendu
+
+# ----- Agent Marché -----
+MARKET_AGENT = "market_advice_agent"
+MARKET_ALLOWED_DOMAINS = ("mubawab.ma", "yakeey.com", "agenz.ma", "sarouty.ma", "avito.ma")
+MARKET_SITE_NAMES = re.compile(r"\b(yakeey|agenz|mubawab|sarouty|avito)\b|https?://|www\.", re.IGNORECASE)
+# un "chiffre de prix" = un nombre suivi d'une unité de prix ou de surface (DH, MAD, dirham, درهم, m², m2)
+MARKET_FIGURE = re.compile(
+    r"[0-9\u0660-\u0669][0-9\u0660-\u0669\s.,\u00a0\u202f]*\s*(?:millions?\s+(?:de\s+)?|مليون\s+)?(?:dhs?\b|mad\b|dirhams?\b|درهم|دراهم|/\s*m|m²|m2\b)",
+    re.IGNORECASE)
+# valeurs attendues de metadata.langue selon la langue du jeu de test
+MARKET_LANG_CODES = {"fr": ("fr",), "dar": ("darija_latin",), "en": ("en",), "ar": ("ar", "darija_arabe")}
+# vérifications mesurées mais qui ne comptent pas dans le taux de réussite
+INFORMATIVE_CHECKS = ("langue_detectee_correcte", "ecriture_reponse_attendue")
 
 
 # --------------------------------------------------------------------------
@@ -96,6 +122,16 @@ def strip_accents(text):
 
 def norm(text):
     return strip_accents(text).lower()
+
+
+def market_figures(text):
+    """Chiffres de prix trouvés dans une réponse (texte exact, espaces normalisés)."""
+    return [re.sub(r"\s+", " ", m.group(0)).strip() for m in MARKET_FIGURE.finditer(text or "")]
+
+
+def arabic_ratio(text):
+    letters = [c for c in (text or "") if c.isalpha()]
+    return (sum("\u0600" <= c <= "\u06ff" for c in letters) / len(letters)) if letters else 0.0
 
 
 def percentile95(sorted_values):
@@ -290,7 +326,31 @@ def evaluate(case, http_status, data, gt):
         checks["aucun_agent"] = agent is None
         checks["aucun_outil_appele"] = tools == 0
         checks["aucune_donnee_renvoyee"] = not ids
-    return all(checks.values()), checks
+    elif beh == "market_not_routed":
+        # contrôle de non-régression : une recherche de bien ne doit pas partir vers l'Agent Marché
+        checks["bon_agent"] = agent == exp_agent
+    elif beh in ("market_figure", "market_figure_or_none", "market_no_figure"):
+        is_market = agent == MARKET_AGENT
+        has_figure = bool(market_figures(reply))
+        cited = meta.get("cited_sources") or []
+        if beh != "market_no_figure":
+            checks["bon_agent"] = is_market
+        if is_market:
+            checks["aucune_erreur_technique"] = not meta.get("tavily_error") and not meta.get("gemini_error")
+        checks["aucun_nom_de_site_ni_url"] = not MARKET_SITE_NAMES.search(reply)
+        if beh == "market_figure":
+            checks["chiffre_present"] = has_figure
+        if beh == "market_no_figure":
+            checks["aucun_chiffre"] = not has_figure
+        elif has_figure and is_market:
+            checks["source_citee"] = len(cited) >= 1
+            checks["sources_citees_autorisees"] = all(
+                any((c.get("domain") or "").endswith(d) for d in MARKET_ALLOWED_DOMAINS) for c in cited)
+        # mesuré, hors taux de réussite (voir INFORMATIVE_CHECKS)
+        if is_market:
+            checks["langue_detectee_correcte"] = meta.get("langue") in MARKET_LANG_CODES.get(case["language"], ())
+        checks["ecriture_reponse_attendue"] = (arabic_ratio(reply) > 0.5) == (case["language"] == "ar")
+    return all(v for k, v in checks.items() if k not in INFORMATIVE_CHECKS), checks
 
 
 def build_record(case, call, gt):
@@ -312,7 +372,27 @@ def build_record(case, call, gt):
         "returned_ids": (data or {}).get("recommended_annonce_ids") or [],
         "gt": {k: v for k, v in gt.items() if k != "items"} | ({"transactions_count": gt.get("count")} if "count" in gt else {}),
         "reply": (data or {}).get("reply"), "passed": passed, "checks": checks,
-    }
+    } | (market_details(data, meta) if case["category"] == "market" else {})
+
+
+def market_details(data, meta):
+    """Éléments conservés pour l'annotation manuelle de la fidélité (Agent Marché)."""
+    reply = (data or {}).get("reply") or ""
+    return {"market": {
+        "intent": (data or {}).get("intent"),
+        "langue_detectee": meta.get("langue"),
+        "search_query": meta.get("search_query"),
+        "query_rewritten": meta.get("query_rewritten"),
+        "rewrite_error": meta.get("rewrite_error"),
+        "tavily_error": meta.get("tavily_error"),
+        "gemini_error": meta.get("gemini_error"),
+        "site_name_leak_avant_nettoyage": meta.get("site_name_leak"),
+        "sources_count": meta.get("sources_count"),
+        "cited_sources": meta.get("cited_sources") or [],
+        "chiffres_dans_la_reponse": market_figures(reply),
+        "raw_reply": meta.get("raw_reply"),
+        "sources_extraits": meta.get("sources_extraits") or [],
+    }}
 
 
 # --------------------------------------------------------------------------
@@ -351,6 +431,8 @@ def summarize(records, snap_before, snap_after):
     refusals = [r for r in records if r["category"] == "security_refusal"]
     forged = [r for r in records if r["category"] == "security_forged"]
 
+    market = summarize_market([r for r in records if r["category"] == "market"])
+
     integrity = None
     if snap_before and snap_after:
         common = set(snap_before) & set(snap_after)
@@ -383,6 +465,31 @@ def summarize(records, snap_before, snap_after):
         "avg_llm_calls_per_message": (statistics.mean(r["llm_calls_estimated"] for r in records if r["status"] == "ok")
                                       if any(r["status"] == "ok" for r in records) else None),
         "by_category": by_cat,
+    } | ({"market": market} if market else {})
+
+
+def summarize_market(rs):
+    """Taux par vérification pour l'Agent Marché (chaque vérification n'est comptée que sur les cas où elle s'applique)."""
+    if not rs:
+        return None
+    per_check = {}
+    for r in rs:
+        for name, ok in r["checks"].items():
+            c = per_check.setdefault(name, {"correct": 0, "total": 0, "hors_taux": name in INFORMATIVE_CHECKS})
+            c["total"] += 1
+            c["correct"] += bool(ok)
+    for c in per_check.values():
+        c["rate"] = rate(c["correct"], c["total"])
+    answered = [r for r in rs if r.get("market") and r["agent_used"] == MARKET_AGENT]
+    return {
+        "n": len(rs),
+        "passed": sum(r["passed"] for r in rs),
+        "n_traites_par_agent_marche": len(answered),
+        "n_reponses_avec_chiffre": sum(bool(r["market"]["chiffres_dans_la_reponse"]) for r in answered),
+        "n_requetes_reformulees": sum(bool(r["market"]["query_rewritten"]) for r in answered),
+        "n_fuites_nom_de_site_avant_nettoyage": sum(bool(r["market"]["site_name_leak_avant_nettoyage"]) for r in answered),
+        "n_avec_extraits_enregistres": sum(bool(r["market"]["sources_extraits"]) for r in answered),
+        "par_verification": per_check,
     }
 
 
@@ -422,6 +529,12 @@ def print_summary(m):
         lat = f"{c['latency_mean_ms']/1000:.2f}s" if c["latency_mean_ms"] is not None else "n/a"
         llm = f"{c['avg_llm_calls']:.1f}" if c["avg_llm_calls"] is not None else "n/a"
         print("{:<24}{:>4}{:>9}{:>9}{:>12}{:>11}".format(c["label"], c["n"], c["passed"], fmt(c["pass_rate"]), lat, llm))
+    mk = m.get("market")
+    if mk:
+        print(f"\nAgent Marché : {mk['passed']}/{mk['n']} corrects | traités par l'agent : {mk['n_traites_par_agent_marche']} | "
+              f"réponses avec chiffre : {mk['n_reponses_avec_chiffre']} | extraits enregistrés : {mk['n_avec_extraits_enregistres']}")
+        for name, c in mk["par_verification"].items():
+            print(f"  {name:<28}{c['correct']:>3}/{c['total']:<3} {fmt(c['rate'])}" + ("   (hors taux)" if c["hors_taux"] else ""))
     print(f"\nFichiers générés dans : {RESULTS_DIR}")
 
 
@@ -434,7 +547,7 @@ def save_outputs(records, metrics):
         w.writerow(["id", "catégorie", "message", "auth", "résultat", "agent", "appels_outils", "appels_LLM_estimés",
                     "latence_ms", "http", "vérifications_échouées", "réponse"])
         for r in sorted(records, key=lambda x: x["id"]):
-            failed = ", ".join(k for k, v in r["checks"].items() if not v)
+            failed = ", ".join(k for k, v in r["checks"].items() if not v and k not in INFORMATIVE_CHECKS)
             w.writerow([r["id"], r["category"], r["message"], r["auth"], "Correct" if r["passed"] else "Incorrect",
                         r["agent_used"], r["tool_calls"], r["llm_calls_estimated"], r["latency_ms"], r["http_status"],
                         failed, (r["reply"] or r["error"] or "").replace("\n", " ")])
@@ -446,6 +559,21 @@ def save_outputs(records, metrics):
                         f"{c['latency_mean_ms']/1000:.2f}" if c["latency_mean_ms"] is not None else "",
                         f"{c['latency_p95_ms']/1000:.2f}" if c["latency_p95_ms"] is not None else "",
                         f"{c['avg_llm_calls']:.2f}" if c["avg_llm_calls"] is not None else ""])
+
+
+    market = [r for r in sorted(records, key=lambda x: x["id"]) if r.get("market")]
+    if market:
+        with open(RESULTS_DIR / "e2e_market_details.csv", "w", encoding="utf-8-sig", newline="") as f:
+            w = csv.writer(f, quoting=csv.QUOTE_ALL)
+            w.writerow(["id", "message", "langue", "comportement_attendu", "résultat", "agent", "langue_détectée",
+                        "requête_de_recherche", "chiffres_dans_la_réponse", "sources_citées", "nb_sources", "réponse"])
+            for r in market:
+                mk = r["market"]
+                w.writerow([r["id"], r["message"], r["language"], r["expected_behavior"],
+                            "Correct" if r["passed"] else "Incorrect", r["agent_used"], mk["langue_detectee"],
+                            mk["search_query"], " | ".join(mk["chiffres_dans_la_reponse"]),
+                            " | ".join(f"[{c.get('n')}] {c.get('domain')} — {c.get('title')}" for c in mk["cited_sources"]),
+                            mk["sources_count"], (r["reply"] or "").replace("\n", " ")])
 
 
 def make_charts(metrics):
@@ -499,7 +627,14 @@ def main():
     ap.add_argument("--limit", type=int, default=None, help="ne traite que N messages")
     ap.add_argument("--only", default=None, help="catégories à tester, séparées par des virgules (ex: search,faq)")
     ap.add_argument("--skip-auth", action="store_true", help="ignore les cas nécessitant une connexion (aucun identifiant requis)")
+    ap.add_argument("--results-dir", default=None, help="dossier de résultats, dans tests_ia (défaut : results)")
     args = ap.parse_args()
+
+    if args.results_dir:
+        global RESULTS_DIR, RAW_PATH, SNAPSHOT_PATH
+        RESULTS_DIR = BASE_DIR / args.results_dir
+        RAW_PATH = RESULTS_DIR / "e2e_raw.jsonl"
+        SNAPSHOT_PATH = RESULTS_DIR / "e2e_snapshots.json"
 
     if args.reset:
         for p in (RAW_PATH, SNAPSHOT_PATH):
@@ -551,7 +686,7 @@ def main():
         append_raw(rec)
         print(f"[{i:>2}/{len(todo)}] {'OK' if rec['passed'] else 'XX'}  #{rec['id']:<3} {rec['category']:<17} "
               f"agent={str(rec['agent_used']):<24} {rec['latency_ms']/1000:.2f}s"
-              + ("" if rec["passed"] else f"  échec: {[k for k, v in rec['checks'].items() if not v]}"
+              + ("" if rec["passed"] else f"  échec: {[k for k, v in rec['checks'].items() if not v and k not in INFORMATIVE_CHECKS]}"
                  + (f" ({rec['error']})" if rec["error"] else "")))
         if i < len(todo):
             time.sleep(DELAY_SECONDS)

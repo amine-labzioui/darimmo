@@ -23,7 +23,12 @@ class AdminStatsSerializer(serializers.Serializer):
     annonces_pending = serializers.IntegerField()
     annonces_sold = serializers.IntegerField()
     annonces_rented = serializers.IntegerField()
+    annonces_archived = serializers.IntegerField()
     total_views = serializers.IntegerField()
+    visit_requests_count = serializers.IntegerField()
+    visit_pending_count = serializers.IntegerField()
+    visit_accepted_count = serializers.IntegerField()
+    visit_refused_count = serializers.IntegerField()
 
 
 class AdminUserSerializer(serializers.ModelSerializer):

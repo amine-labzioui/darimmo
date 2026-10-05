@@ -11,6 +11,7 @@ import {
   Ruler,
 } from "lucide-react";
 import { Map } from "lucide-react";
+import { formatSurface } from "../../../utils/formatters";
 
 export default function DescriptionSection({ annonce }) {
   const pointsForts = [];
@@ -131,7 +132,7 @@ export default function DescriptionSection({ annonce }) {
           <InfoCard
             icon={Ruler}
             label="Surface"
-            value={`${annonce.surface} m²`}
+            value={formatSurface(annonce.surface)}
           />
 
           <InfoCard

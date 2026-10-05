@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, XCircle, Star } from "lucide-react";
+import { CheckCircle2, XCircle, Star, Archive, RotateCcw } from "lucide-react";
 import api from "../../services/api";
+import { annonceService } from "../../services/annonceService";
 import { useNotification } from "../../hooks/useNotification";
 import { formatPriceWithCurrency } from "../../utils/formatters";
 import { classNames } from "../../utils/helpers";
@@ -12,6 +13,7 @@ const TABS = [
   { value: "published", label: "Publiées" },
   { value: "sold", label: "Vendues" },
   { value: "rented", label: "Louées" },
+  { value: "archived", label: "Archivées" },
 ];
 
 export default function AnnonceModeration() {
@@ -19,6 +21,7 @@ export default function AnnonceModeration() {
   const [activeTab, setActiveTab] = useState("pending");
   const [annonces, setAnnonces] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     loadAnnonces(activeTab);
@@ -27,11 +30,13 @@ export default function AnnonceModeration() {
 
   async function loadAnnonces(status) {
     setLoading(true);
+    setLoadError(false);
     try {
       const { data } = await api.get("/admin-dashboard/annonces/", { params: { status } });
       setAnnonces(data.results || data);
     } catch {
       setAnnonces([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -53,6 +58,28 @@ export default function AnnonceModeration() {
       await api.post(`/admin-dashboard/annonces/${id}/rejeter/`, { reason });
       setAnnonces((prev) => prev.filter((a) => a.id !== id));
       pushToast({ type: "success", title: "Annonce rejetée" });
+    } catch {
+      pushToast({ type: "error", title: "Une erreur est survenue" });
+    }
+  }
+
+  // Modération : l'annonce archivée quitte la recherche publique.
+  async function handleArchive(id) {
+    if (!confirm("Archiver cette annonce ? Elle ne sera plus visible dans la recherche.")) return;
+    try {
+      await annonceService.archiver(id);
+      setAnnonces((prev) => prev.filter((a) => a.id !== id));
+      pushToast({ type: "success", title: "Annonce archivée" });
+    } catch {
+      pushToast({ type: "error", title: "Une erreur est survenue" });
+    }
+  }
+
+  async function handleRepublish(id) {
+    try {
+      await annonceService.publier(id);
+      setAnnonces((prev) => prev.filter((a) => a.id !== id));
+      pushToast({ type: "success", title: "Annonce republiée" });
     } catch {
       pushToast({ type: "error", title: "Une erreur est survenue" });
     }
@@ -96,6 +123,11 @@ export default function AnnonceModeration() {
 
       {loading ? (
         <LoadingSpinner label="Chargement…" />
+      ) : loadError ? (
+        <EmptyState
+          title="Chargement impossible"
+          description="Les données n'ont pas pu être chargées. Vérifiez que le serveur est démarré, puis rechargez la page."
+        />
       ) : annonces.length === 0 ? (
         <EmptyState title="Aucune annonce" description="Aucune annonce dans cette catégorie pour le moment." />
       ) : (
@@ -136,6 +168,22 @@ export default function AnnonceModeration() {
                       <XCircle size={17} />
                     </button>
                   </>
+                )}
+                {activeTab === "published" && (
+                  <button
+                    onClick={() => handleArchive(a.id)}
+                    className="flex items-center gap-1.5 px-3 h-9 rounded-lg text-sm font-medium text-[#5C6961] border border-[#E6DFD0] hover:bg-[#F5F0E8] transition-colors"
+                  >
+                    <Archive size={15} /> Archiver
+                  </button>
+                )}
+                {activeTab === "archived" && (
+                  <button
+                    onClick={() => handleRepublish(a.id)}
+                    className="flex items-center gap-1.5 px-3 h-9 rounded-lg text-sm font-medium text-[#047857] bg-[#ECFDF5] hover:bg-[#d1fae5] transition-colors"
+                  >
+                    <RotateCcw size={15} /> Republier
+                  </button>
                 )}
               </div>
             </div>

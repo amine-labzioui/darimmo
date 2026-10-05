@@ -8,6 +8,7 @@ import {
 
 import {
   formatPriceWithCurrency,
+  formatSurface,
 } from "../../../utils/formatters";
 
 import {
@@ -88,7 +89,7 @@ export default function SimilarPropertyCard({
 
             <Maximize size={14} />
 
-            {annonce.surface} m²
+            {formatSurface(annonce.surface)}
 
           </div>
 

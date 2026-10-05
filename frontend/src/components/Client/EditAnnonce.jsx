@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Save, Trash2, CheckCircle2, ImagePlus } from "lucide-react";
+import { Save, Trash2, CheckCircle2, ImagePlus, Archive } from "lucide-react";
 import { useForm } from "../../hooks/useForm";
 import { validateAnnonceForm } from "../../utils/validators";
 import { annonceService } from "../../services/annonceService";
@@ -98,7 +98,7 @@ export default function EditAnnonce() {
   async function reverseGeocode(lat, lng) {
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=fr&lat=${lat}&lon=${lng}`
     );
 
     const data = await response.json();
@@ -160,6 +160,21 @@ export default function EditAnnonce() {
       pushToast({ type: "error", title: "Impossible de publier l'annonce" });
     }
   }
+  // Changement de statut par le propriétaire : vendue, louée, archivée.
+  async function handleStatusChange(action, confirmMessage, successTitle) {
+    if (!confirm(confirmMessage)) return;
+    try {
+      await action(id);
+      pushToast({ type: "success", title: successTitle });
+      const updated = await annonceService.getById(id);
+      setAnnonce(updated);
+    } catch (err) {
+      pushToast({
+        type: "error",
+        title: err.response?.data?.detail || "Impossible de modifier le statut de l'annonce",
+      });
+    }
+  }
   async function handleBoost(planId) {
   try {
     const data = await paymentService.createCheckout({
@@ -194,6 +209,7 @@ export default function EditAnnonce() {
   if (!annonce) return <p className="text-[#5C6961]">{serverError}</p>;
 
   const statusInfo = ANNONCE_STATUS[annonce.status];
+  const isClosed = ["sold", "rented", "archived"].includes(annonce.status);
 
   return (
     <div className="max-w-3xl">
@@ -215,8 +231,55 @@ export default function EditAnnonce() {
           onClick={handlePublish}
           className="flex items-center gap-2 mb-6 px-5 py-2.5 rounded-xl bg-[#ECFDF5] text-[#047857] text-[14px] font-medium hover:bg-[#d1fae5] transition-colors"
         >
-          <CheckCircle2 size={17} /> Publier cette annonce
+          <CheckCircle2 size={17} /> {isClosed ? "Republier" : "Publier cette annonce"}
         </button>
+      )}
+      {annonce.status === "published" && (
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          {annonce.transaction_type === "vente" && (
+            <button
+              type="button"
+              onClick={() =>
+                handleStatusChange(
+                  annonceService.marquerVendue,
+                  "Marquer cette annonce comme vendue ? Elle ne sera plus visible dans la recherche.",
+                  "Annonce marquée comme vendue"
+                )
+              }
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#ECFDF5] text-[#047857] text-sm font-medium hover:bg-[#d1fae5] transition-colors"
+            >
+              <CheckCircle2 size={16} /> Marquer comme vendue
+            </button>
+          )}
+          {annonce.transaction_type === "location" && (
+            <button
+              type="button"
+              onClick={() =>
+                handleStatusChange(
+                  annonceService.marquerLouee,
+                  "Marquer cette annonce comme louée ? Elle ne sera plus visible dans la recherche.",
+                  "Annonce marquée comme louée"
+                )
+              }
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#ECFDF5] text-[#047857] text-sm font-medium hover:bg-[#d1fae5] transition-colors"
+            >
+              <CheckCircle2 size={16} /> Marquer comme louée
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() =>
+              handleStatusChange(
+                annonceService.archiver,
+                "Archiver cette annonce ? Elle ne sera plus visible dans la recherche.",
+                "Annonce archivée"
+              )
+            }
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#E6DFD0] bg-white text-[#5C6961] text-sm font-medium hover:bg-[#F7F4EE] transition-colors"
+          >
+            <Archive size={16} /> Archiver
+          </button>
+        </div>
       )}
       <BoostAnnonceCard
   boostPlans={boostPlans}

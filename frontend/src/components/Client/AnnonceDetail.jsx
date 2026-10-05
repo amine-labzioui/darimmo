@@ -8,6 +8,7 @@ import { messageService } from "../../services/messageService";
 
 import { useAuth } from "../../hooks/useAuth";
 import { useNotification } from "../../hooks/useNotification";
+import { getAnnonceUnavailableMessage } from "../../utils/helpers";
 
 import LoadingSpinner from "../Shared/LoadingSpinner";
 
@@ -144,8 +145,21 @@ export default function AnnonceDetail() {
     return null;
   }
 
+  const unavailableMessage = getAnnonceUnavailableMessage(annonce);
+
   return (
     <div className="min-h-screen bg-[#FAF8F3]">
+
+      {unavailableMessage && (
+        <div className="max-w-7xl mx-auto px-6 pt-6">
+          <div
+            role="status"
+            className="rounded-lg bg-[#F7F4EE] border border-[#E6DFD0] px-4 py-3 text-sm font-medium text-[#1C2520]"
+          >
+            {unavailableMessage}
+          </div>
+        </div>
+      )}
 
       <GallerySection
         annonce={annonce}

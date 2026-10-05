@@ -52,8 +52,26 @@ export function debounce(fn, delay = 400) {
 // Boost réellement actif : annonce boostée et date de fin non dépassée (ou absente).
 export function isBoostActive(annonce) {
   if (!annonce?.is_boosted) return false;
+  // Une annonce vendue, louée ou archivée n'est plus mise en avant.
+  if (annonce.status !== "published") return false;
   if (!annonce.boosted_until) return true;
   return new Date(annonce.boosted_until) > new Date();
+}
+
+// Message du bandeau de la page publique quand l'annonce n'est pas publiée
+// (null si elle est publiée).
+export function getAnnonceUnavailableMessage(annonce) {
+  if (!annonce || annonce.status === "published") return null;
+  if (annonce.status === "sold") {
+    return "Cette annonce n'est plus disponible : le bien a été vendu.";
+  }
+  if (annonce.status === "rented") {
+    return "Cette annonce n'est plus disponible : le bien a été loué.";
+  }
+  if (annonce.status === "archived") {
+    return "Cette annonce n'est plus disponible : elle a été archivée.";
+  }
+  return "Cette annonce n'est pas encore publiée.";
 }
 
 // Phrase affichée à la place des plans de boost quand l'annonce n'est pas publiée.

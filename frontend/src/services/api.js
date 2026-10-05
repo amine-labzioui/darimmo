@@ -79,8 +79,12 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        clearAuthStorage();
-        window.location.href = "/connexion";
+        // Déconnexion seulement si le serveur a refusé le rafraîchissement,
+        // pas en cas de panne réseau.
+        if (refreshError.response) {
+          clearAuthStorage();
+          window.location.href = "/connexion";
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
