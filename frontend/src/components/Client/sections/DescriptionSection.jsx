@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Map } from "lucide-react";
 import { formatSurface } from "../../../utils/formatters";
+import { ANNONCE_STATUS } from "../../../utils/constants";
 
 export default function DescriptionSection({ annonce }) {
   const pointsForts = [];
@@ -132,13 +133,13 @@ export default function DescriptionSection({ annonce }) {
           <InfoCard
             icon={Ruler}
             label="Surface"
-            value={formatSurface(annonce.surface)}
+            value={<span className="normal-case">{formatSurface(annonce.surface)}</span>}
           />
 
           <InfoCard
             icon={Building2}
             label="Statut"
-            value={annonce.status}
+            value={ANNONCE_STATUS[annonce.status]?.label || annonce.status}
           />
 
         </div>

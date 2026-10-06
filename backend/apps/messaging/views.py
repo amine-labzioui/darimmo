@@ -31,14 +31,11 @@ class ConversationViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return Conversation.objects.filter(
             Q(client=user) | Q(agent=user)
-        ).select_related("annonce", "client", "agent")
+        ).select_related("annonce")
 
     @action(detail=False, methods=["post"])
     
     def contacter(self, request):
-        print("===== CONTACTER ACTION =====")
-        print(request.data)
-
         annonce_id = request.data.get("annonce")
 
         message_content = request.data.get(
@@ -50,33 +47,39 @@ class ConversationViewSet(viewsets.ModelViewSet):
            Annonce,
         pk=annonce_id,
        )
-  
+
+        if annonce.owner == request.user:
+            return Response(
+                {"detail": "Vous êtes le propriétaire de cette annonce."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         conversation, created = Conversation.objects.get_or_create(
            annonce=annonce,
            client=request.user,
            agent=annonce.owner,
         )
 
-        if created:
+        # Le message est créé à chaque contact, que la conversation soit nouvelle ou non.
+        message = Message.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            recipient=annonce.owner,
+            content=message_content,
+        )
 
-            Message.objects.create(
-                conversation=conversation,
-                sender=request.user,
-                recipient=annonce.owner,
-                content=message_content,
-            )
-
-            Notification.objects.create(
-                user=annonce.owner,
-                notification_type=Notification.NotificationType.NEW_MESSAGE,
-                title="Nouveau message",
-                body=f"{request.user.get_full_name()} vous a contacté à propos de '{annonce.title}'.",
-            )
+        Notification.objects.create(
+            user=annonce.owner,
+            notification_type=Notification.NotificationType.NEW_MESSAGE,
+            title="Nouveau message",
+            body=f"{request.user.get_full_name()} vous a contacté à propos de '{annonce.title}'.",
+        )
 
         return Response(
         {
             "conversation_id": conversation.id,
             "created": created,
+            "message_id": message.id,
         },
         status=status.HTTP_200_OK,
     )

@@ -43,6 +43,10 @@ function linkify(text) {
 export default function Messages() {
   const { user } = useAuth();
 
+  // Nom de l'autre participant : comparaison des identifiants (une agence peut aussi être cliente).
+  const otherName = (c) =>
+    Number(c?.client) === Number(user?.id) ? c?.agent_name : c?.client_name;
+
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -199,10 +203,7 @@ export default function Messages() {
               >
 
                 <div className="w-9 h-9 rounded-full bg-[#047857] text-white flex items-center justify-center font-bold text-sm shrink-0">
-                  {(user?.role === "agence"
-                    ? conv.client_name
-                    : conv.agent_name
-                  )
+                  {otherName(conv)
                     ?.charAt(0)
                     ?.toUpperCase()}
                 </div>
@@ -213,9 +214,7 @@ export default function Messages() {
 
                     <p className="text-sm font-semibold text-[#1C2520] truncate">
 
-                      {user?.role === "agence"
-                        ? conv.client_name
-                        : conv.agent_name}
+                      {otherName(conv)}
 
                     </p>
 
@@ -269,10 +268,7 @@ export default function Messages() {
 
             <div className="w-9 h-9 rounded-full bg-[#047857] text-white flex items-center justify-center font-bold text-sm">
 
-              {(user?.role === "agence"
-                ? activeConversation.client_name
-                : activeConversation.agent_name
-              )
+              {otherName(activeConversation)
                 ?.charAt(0)
                 ?.toUpperCase()}
 
@@ -282,9 +278,7 @@ export default function Messages() {
 
               <h3 className="text-sm font-semibold text-[#1C2520]">
 
-                {user?.role === "agence"
-                  ? activeConversation.client_name
-                  : activeConversation.agent_name}
+                {otherName(activeConversation)}
 
               </h3>
 
