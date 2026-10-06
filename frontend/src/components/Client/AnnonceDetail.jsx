@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import SimilarPropertiesSection from "./sections/SimilarPropertiesSection";
 
 import { annonceService } from "../../services/annonceService";
@@ -25,6 +25,8 @@ export default function AnnonceDetail() {
 
   const { isAuthenticated, isClient } = useAuth();
   const { pushToast } = useNotification();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [annonce, setAnnonce] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -77,14 +79,17 @@ export default function AnnonceDetail() {
   }
 }
 
+  // Actions réservées aux utilisateurs connectés : un visiteur est envoyé vers la
+  // connexion, puis ramené sur cette annonce (location transmise dans state.from).
+  function requireLogin(message) {
+    if (isAuthenticated) return true;
+    pushToast({ type: "info", title: message });
+    navigate("/connexion", { state: { from: location } });
+    return false;
+  }
+
   async function handleFavorite() {
-    if (!isAuthenticated) {
-      pushToast({
-        type: "info",
-        title: "Connectez-vous d'abord",
-      });
-      return;
-    }
+    if (!requireLogin("Connectez-vous pour ajouter ce bien à vos favoris")) return;
 
     try {
       await clientService.addFavorite(annonce.id);
@@ -178,8 +183,12 @@ export default function AnnonceDetail() {
           annonce={annonce}
           isClient={isClient}
           onFavorite={handleFavorite}
-          onContact={() => setContactOpen(true)}
-          onVisit={() => setVisitOpen(true)}
+          onContact={() => {
+            if (requireLogin("Connectez-vous pour contacter le vendeur")) setContactOpen(true);
+          }}
+          onVisit={() => {
+            if (requireLogin("Connectez-vous pour programmer une visite")) setVisitOpen(true);
+          }}
         />
 
       </div>

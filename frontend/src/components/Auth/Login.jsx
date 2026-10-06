@@ -108,7 +108,7 @@ export default function Login() {
 
         <p className="text-center text-sm text-[#5C6961] mt-5">
           Pas encore de compte ?{" "}
-          <Link to="/inscription" className="text-[#047857] font-medium hover:underline">
+          <Link to="/inscription" state={location.state} className="text-[#047857] font-medium hover:underline">
             Créer un compte
           </Link>
         </p>

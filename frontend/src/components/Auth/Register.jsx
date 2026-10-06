@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Mail, Lock, User, Phone, Building2, UserPlus } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useForm } from "../../hooks/useForm";
@@ -9,6 +9,9 @@ import { CITIES } from "../../utils/constants";
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Page d'où vient le visiteur (ex. une annonce), transmise depuis la connexion.
+  const from = location.state?.from?.pathname;
   const [serverError, setServerError] = useState("");
 
   const { values, errors, submitting, handleChange, setFieldValue, handleSubmit } = useForm(
@@ -24,7 +27,7 @@ export default function Register() {
     setServerError("");
     try {
       await register(data);
-      navigate("/tableau-de-bord");
+      navigate(from || "/tableau-de-bord");
     } catch (err) {
       const apiErrors = err?.response?.data;
       if (apiErrors && typeof apiErrors === "object") {
@@ -174,7 +177,7 @@ export default function Register() {
 
         <p className="text-center text-sm text-[#5C6961] mt-5">
           Déjà un compte ?{" "}
-          <Link to="/connexion" className="text-[#047857] font-medium hover:underline">
+          <Link to="/connexion" state={location.state} className="text-[#047857] font-medium hover:underline">
             Se connecter
           </Link>
         </p>
