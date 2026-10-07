@@ -44,6 +44,12 @@ export const aiService = {
     return data;
   },
 
+  // Conversations IA de l'utilisateur connecté, avec leurs messages et leurs recommandations.
+  async getMyConversations() {
+    const { data } = await api.get("/ai/mes-conversations/");
+    return data.results || data;
+  },
+
   async getConversationHistory(sessionId) {
     const { data } = await api.get(`/ai/conversations/${sessionId}/`);
     return data;

@@ -149,9 +149,14 @@ class AIConversationHistoryView(generics.RetrieveAPIView):
     """GET /api/ai/conversations/{session_id}/ — Historique complet d'une conversation."""
 
     serializer_class = AIConversationSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     lookup_field = "session_id"
-    queryset = AIConversation.objects.prefetch_related("messages", "recommendations__annonce")
+
+    def get_queryset(self):
+        # Une conversation n'est lisible que par son utilisateur (404 pour les autres).
+        return AIConversation.objects.filter(user=self.request.user).prefetch_related(
+            "messages", "recommendations__annonce"
+        )
 
 
 class MyAIConversationsView(generics.ListAPIView):

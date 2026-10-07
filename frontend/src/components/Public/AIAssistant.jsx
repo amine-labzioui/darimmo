@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Send, Sparkles, MapPin, Bed, Maximize } from "lucide-react";
+import { Send, Sparkles, MapPin, Bed, Maximize, Plus } from "lucide-react";
 import { aiService } from "../../services/analyticsService";
-import { getOrCreateSessionId } from "../../utils/helpers";
+import { useAuth } from "../../hooks/useAuth";
 import { formatPriceWithCurrency } from "../../utils/formatters";
 import MarkdownText from "./MarkdownText";
 
@@ -28,9 +28,59 @@ function hideRecommendedLinks(content, recommendations = []) {
     .join("\n");
 }
 
+// Session en cours, mémorisée pour l'onglet avec l'utilisateur à qui elle appartient
+// (un visiteur ou un autre compte ne doit pas reprendre cette conversation).
+const SESSION_KEY = "darimmo_ai_session";
+
+function readStoredSession() {
+  try {
+    return JSON.parse(sessionStorage.getItem(SESSION_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+
+function storeSession(sessionId, userId) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ sessionId, userId }));
+  } catch {
+    /* no-op */
+  }
+}
+
+function lastMessageDate(conversation) {
+  const list = conversation.messages || [];
+  return list.length ? list[list.length - 1].created_at : "";
+}
+
+// Reconstruit l'affichage d'une conversation enregistrée. Les recommandations sont liées
+// à la conversation, pas à un message : chacune est rattachée à la dernière réponse de
+// l'assistant qui la précède dans le temps.
+function buildMessages(conversation) {
+  const list = (conversation.messages || []).map((m) => ({
+    sender: m.sender,
+    content: m.content,
+    created_at: m.created_at,
+    recommendations: [],
+  }));
+  const recs = [...(conversation.recommendations || [])].sort((a, b) =>
+    a.created_at.localeCompare(b.created_at)
+  );
+  for (const rec of recs) {
+    const target = [...list]
+      .reverse()
+      .find((m) => m.sender === "ai" && m.created_at <= rec.created_at);
+    if (target) target.recommendations.push(rec);
+  }
+  return [WELCOME_MESSAGE, ...list];
+}
+
 export default function AIAssistant() {
-  const [sessionId] = useState(getOrCreateSessionId);
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id ?? null;
+  const [sessionId, setSessionId] = useState(null);
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
@@ -39,10 +89,65 @@ export default function AIAssistant() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  function startNewConversation() {
+    const id = crypto.randomUUID();
+    storeSession(id, userId);
+    setSessionId(id);
+    setMessages([WELCOME_MESSAGE]);
+  }
+
+  // À l'ouverture et à chaque changement d'utilisateur : un utilisateur connecté retrouve
+  // sa conversation en cours (ou la plus récente) ; un visiteur n'a pas d'historique.
+  useEffect(() => {
+    if (authLoading) return;
+    let cancelled = false;
+
+    async function init() {
+      setLoadingHistory(true);
+      if (userId === null) {
+        startNewConversation();
+        setLoadingHistory(false);
+        return;
+      }
+      const stored = readStoredSession();
+      const storedId = stored && String(stored.userId) === String(userId) ? stored.sessionId : null;
+      try {
+        const conversations = await aiService.getMyConversations();
+        if (cancelled) return;
+        const current = storedId
+          ? conversations.find((c) => c.session_id === storedId)
+          : [...conversations]
+              .filter((c) => (c.messages || []).length > 0)
+              .sort((a, b) => lastMessageDate(b).localeCompare(lastMessageDate(a)))[0];
+        if (current) {
+          storeSession(current.session_id, userId);
+          setSessionId(current.session_id);
+          setMessages(buildMessages(current));
+        } else if (storedId) {
+          // nouvelle conversation de cet utilisateur, encore sans message
+          setSessionId(storedId);
+          setMessages([WELCOME_MESSAGE]);
+        } else {
+          startNewConversation();
+        }
+      } catch {
+        if (!cancelled) startNewConversation();
+      } finally {
+        if (!cancelled) setLoadingHistory(false);
+      }
+    }
+
+    init();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, userId]);
+
   async function handleSend(e) {
     e.preventDefault();
     const text = draft.trim();
-    if (!text || sending) return;
+    if (!text || sending || !sessionId) return;
 
     setMessages((prev) => [...prev, { sender: "user", content: text }]);
     setDraft("");
@@ -88,6 +193,16 @@ export default function AIAssistant() {
           </h1>
           <p className="text-[12.5px] text-[#5C6961]">Disponible 24h/24 pour vous accompagner</p>
         </div>
+        {userId !== null && (
+          <button
+            type="button"
+            onClick={startNewConversation}
+            disabled={sending || loadingHistory || messages.length <= 1}
+            className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#E6DFD0] bg-white text-sm font-medium text-[#047857] hover:bg-[#F5F0E8] disabled:opacity-50 disabled:hover:bg-white"
+          >
+            <Plus size={15} /> Nouvelle conversation
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-[#E6DFD0] flex flex-col h-[60vh] min-h-[420px]">
