@@ -254,6 +254,11 @@
         "specifyBody": "json",
         "jsonBody": "={{ $json.django_body }}",
         "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
           "timeout": 15000
         }
       },
@@ -584,7 +589,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "76158b0b-078d-4db2-9e2d-01a43b1c3800",
+  "versionId": "d3177b9c-e81a-4b5c-89ee-3e5a1a975c2d",
   "meta": {
     "instanceId": "310f76547641023b1ea227a9c38448488011e305263742c6c74f434e8ce90bb1"
   },
